@@ -42,6 +42,7 @@ class ROICanvas(QLabel):
         
         # Regions
         self._regions: List[ManualRegion] = []
+        self._faces: List['FaceRegion'] = []  # Added: Store detected faces
         self._selected_index: int = -1
         # Drawing state
         self._drawing = False
@@ -64,6 +65,10 @@ class ROICanvas(QLabel):
         self._region_color.setAlpha(128)
         self._border_color = QColor(COLOR_ACCENT)
         
+        # Face Overlay Style (Blue)
+        self._face_color = QColor(0, 120, 255, 60)  # Semi-transparent blue
+        self._face_border = QColor(0, 120, 255, 180)
+        
         self.setMouseTracking(True)
         self.setCursor(Qt.CrossCursor)
         self.setMinimumSize(200, 200)
@@ -73,6 +78,11 @@ class ROICanvas(QLabel):
         self._image = image
         self._update_pixmap()
     
+    def set_faces(self, faces: List['FaceRegion']):
+        """Set detected faces to display."""
+        self._faces = faces
+        self.update()
+
     def _update_pixmap(self):
         """Update the display pixmap."""
         if self._image is None:
@@ -371,6 +381,10 @@ class ROICanvas(QLabel):
             )
             painter.drawPixmap(self._offset, scaled_pixmap)
         
+        # Draw detected faces (under manual regions)
+        for face in self._faces:
+            self._draw_face(painter, face)
+        
         # Draw existing regions
         for i, region in enumerate(self._regions):
             self._draw_region(painter, region, i == self._selected_index)
@@ -400,6 +414,23 @@ class ROICanvas(QLabel):
             self._draw_ruler(painter)
         
         painter.end()
+    
+    def _draw_face(self, painter: QPainter, face: 'FaceRegion'):
+        """Draw a single detected face."""
+        # Convert to widget coords
+        top_left = self._image_to_widget(face.x, face.y)
+        w = int(face.width * self._scale)
+        h = int(face.height * self._scale)
+        
+        # Draw fill (Blue semi-transparent)
+        painter.setBrush(self._face_color)
+        
+        # Draw border
+        painter.setPen(QPen(self._face_border, 2))
+        
+        # Draw rectangle
+        painter.drawRect(top_left.x(), top_left.y(), w, h)
+
     
     def _draw_region(self, painter: QPainter, region: ManualRegion, selected: bool):
         """Draw a single region."""

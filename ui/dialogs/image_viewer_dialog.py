@@ -40,6 +40,7 @@ class ImageViewerDialog(QDialog):
         path: str,
         image: Optional[np.ndarray] = None,
         existing_regions: Optional[List[ManualRegion]] = None,
+        detected_faces: Optional[List['FaceRegion']] = None,
         parent: Optional[QWidget] = None
     ):
         super().__init__(parent)
@@ -47,6 +48,7 @@ class ImageViewerDialog(QDialog):
         self._path = path
         self._image = image
         self._initial_regions = existing_regions or []
+        self._initial_faces = detected_faces or []
         
         self._setup_window()
         self._setup_ui()
@@ -55,6 +57,7 @@ class ImageViewerDialog(QDialog):
         if image is not None:
             self._canvas.set_image(image)
             self._canvas.set_regions(self._initial_regions)
+            self._canvas.set_faces(self._initial_faces)
     
     def _setup_window(self):
         """Configure dialog window properties."""

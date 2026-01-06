@@ -41,6 +41,8 @@ class ThumbnailItem(QFrame):
         self.path = path
         self.has_manual_edit = has_manual_edit
         self._selected = False
+        self._faces = []
+        self._original_size = (0, 0)
         
         self._setup_ui()
         
@@ -76,32 +78,60 @@ class ThumbnailItem(QFrame):
     
     def set_thumbnail(self, thumbnail: np.ndarray):
         """Set the thumbnail image from numpy array."""
-        if thumbnail is None:
-            return
+        self._thumbnail_data = thumbnail
+        self._update_display()
+
+    def set_faces(self, faces: list, original_w: int, original_h: int):
+        """Set detected faces to display overlay."""
+        self._faces = faces
+        self._original_size = (original_w, original_h)
+        self._update_display()
         
-        h, w = thumbnail.shape[:2]
-        channels = thumbnail.shape[2] if len(thumbnail.shape) > 2 else 1
+    def _update_display(self):
+        """Update the displayed pixmap with overlays."""
+        if not hasattr(self, '_thumbnail_data') or self._thumbnail_data is None:
+            return
+            
+        # Convert to QImage/QPixmap
+        h, w = self._thumbnail_data.shape[:2]
+        channels = self._thumbnail_data.shape[2] if len(self._thumbnail_data.shape) > 2 else 1
         
         if channels == 3:
-            # Convert BGR to RGB for Qt
             import cv2
-            rgb = cv2.cvtColor(thumbnail, cv2.COLOR_BGR2RGB)
-            image = QImage(
-                rgb.data, w, h, w * 3,
-                QImage.Format_RGB888
-            )
+            rgb = cv2.cvtColor(self._thumbnail_data, cv2.COLOR_BGR2RGB)
+            image = QImage(rgb.data, w, h, w * 3, QImage.Format_RGB888)
         elif channels == 4:
-            image = QImage(
-                thumbnail.data, w, h, w * 4,
-                QImage.Format_RGBA8888
-            )
+            image = QImage(self._thumbnail_data.data, w, h, w * 4, QImage.Format_RGBA8888)
         else:
-            image = QImage(
-                thumbnail.data, w, h, w,
-                QImage.Format_Grayscale8
-            )
-        
+            image = QImage(self._thumbnail_data.data, w, h, w, QImage.Format_Grayscale8)
+            
+        # Create mutable pixmap
         pixmap = QPixmap.fromImage(image)
+        
+        # Draw faces if present
+        if self._faces and self._original_size[0] > 0:
+            from PySide6.QtGui import QPainter, QColor, QPen
+            painter = QPainter(pixmap)
+            painter.setRenderHint(QPainter.Antialiasing)
+            
+            # Scale factor
+            scale_x = w / self._original_size[0]
+            scale_y = h / self._original_size[1]
+            scale = min(scale_x, scale_y) # Should be uniform scaling usually
+            
+            # Style
+            painter.setBrush(QColor(0, 120, 255, 60))  # Blue semi-transparent
+            painter.setPen(QPen(QColor(0, 120, 255, 180), 1))
+            
+            for face in self._faces:
+                fx = int(face.x * scale)
+                fy = int(face.y * scale)
+                fw = int(face.width * scale)
+                fh = int(face.height * scale)
+                painter.drawRect(fx, fy, fw, fh)
+                
+            painter.end()
+            
         self.image_label.setPixmap(pixmap)
     
     def set_manual_edit(self, has_edit: bool):
@@ -218,6 +248,11 @@ class ThumbnailGrid(QScrollArea):
         """Update manual edit marker for a thumbnail."""
         if path in self._items:
             self._items[path].set_manual_edit(has_edit)
+
+    def set_faces(self, path: str, faces: list, original_w: int, original_h: int):
+        """Update face overlay for a thumbnail."""
+        if path in self._items:
+            self._items[path].set_faces(faces, original_w, original_h)
     
     def _relayout(self):
         """Reorganize grid layout."""

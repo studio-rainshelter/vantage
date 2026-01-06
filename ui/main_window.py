@@ -309,15 +309,19 @@ class MainWindow(QMainWindow):
         
         self._detection_worker.start()
     
-    def _on_detection_complete(self, path: str, faces: list):
+    def _on_detection_complete(self, path: str, faces: list, size: tuple):
         """Handle detection result for one image."""
         self._data_manager.set_faces(path, faces)
         
-        # Update status
+        # Update size in data manager
+        w, h = size
         img_data = self._data_manager.get(path)
-        if img_data and img_data.face_count > 0:
-            # Could show indicator on thumbnail
-            pass
+        if img_data:
+            img_data.width = w
+            img_data.height = h
+            
+        # Update thumbnail overlay
+        self.thumbnail_grid.set_faces(path, faces, w, h)
     
     def _on_detection_progress(self, current: int, total: int):
         """Update detection progress."""
@@ -569,15 +573,21 @@ class MainWindow(QMainWindow):
     
     def _open_image_viewer(self, path: str):
         """Open image viewer dialog for the selected image."""
-        image = self._image_processor.load_image(path)
+        # Use processed image if available, otherwise load original
+        if path in self._processed_images:
+            image = self._processed_images[path]
+        else:
+            image = self._image_processor.load_image(path)
+            
         if image is None:
             return
         
-        # Get existing regions
+        # Get existing regions and faces
         img_data = self._data_manager.get(path)
         existing_regions = img_data.manual_regions if img_data else []
+        detected_faces = img_data.faces if img_data else []
         
-        viewer = ImageViewerDialog(path, image, existing_regions, self)
+        viewer = ImageViewerDialog(path, image, existing_regions, detected_faces, self)
         viewer.regions_changed.connect(self._on_regions_changed)
         viewer.show()
     

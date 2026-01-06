@@ -77,7 +77,7 @@ class FaceDetectionWorker(QThread):
         error: Emits (path, error_message) on failure
     """
     
-    detection_complete = Signal(str, list)  # path, List[FaceRegion]
+    detection_complete = Signal(str, list, tuple)  # path, List[FaceRegion], (width, height)
     progress = Signal(int, int)
     finished = Signal()
     error = Signal(str, str)
@@ -109,7 +109,8 @@ class FaceDetectionWorker(QThread):
                 if image is not None:
                     # Detect faces
                     faces = self._detector.detect(image)
-                    self.detection_complete.emit(path, faces)
+                    h, w = image.shape[:2]
+                    self.detection_complete.emit(path, faces, (w, h))
                 else:
                     self.error.emit(path, "Failed to load image")
                     
