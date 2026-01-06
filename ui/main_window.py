@@ -187,6 +187,8 @@ class MainWindow(QMainWindow):
         self.toolbar.auto_detect.connect(self._run_face_detection)
         self.toolbar.apply_mosaic.connect(self._apply_mosaic)
         self.toolbar.apply_blur.connect(self._apply_blur)
+        self.toolbar.revert_mosaic.connect(self._revert_mosaic)
+        self.toolbar.select_all.connect(self.thumbnail_grid.toggle_select_all)
         self.toolbar.save_triggered.connect(self._save_current)
         self.toolbar.export_triggered.connect(self._export_all)
         
@@ -288,11 +290,18 @@ class MainWindow(QMainWindow):
     # =========================================================================
     
     def _run_face_detection(self):
-        """Run face detection on all loaded images."""
-        paths = self._data_manager.get_all_paths()
+        """Run face detection on selected images."""
+        selected_paths = self.thumbnail_grid.selected_paths
         
-        if not paths:
+        if not selected_paths:
+            QMessageBox.information(
+                self,
+                APP_NAME,
+                "No images selected. Please select thumbnails to detect faces."
+            )
             return
+            
+        paths = selected_paths
         
         # Start worker
         self._detection_worker = FaceDetectionWorker(paths)
@@ -350,30 +359,44 @@ class MainWindow(QMainWindow):
         """Apply blur to all images with detected faces."""
         self._apply_effect(EffectType.BLUR)
     
+    
     def _apply_effect(self, effect: EffectType):
-        """Apply effect to all images."""
-        # Get images with faces or manual regions
-        processing_data = self._data_manager.get_processing_data()
+        """Apply effect to selected images, or warn if none selected."""
+        # Get selected paths
+        selected_paths = self.thumbnail_grid.selected_paths
         
-        if not processing_data:
-            return
-        
-        # Filter to only images with regions to process
-        valid_data = [
-            d for d in processing_data
-            if d.get('faces') or d.get('manual_regions')
-        ]
-        
-        if not valid_data:
+        if not selected_paths:
             QMessageBox.information(
                 self,
                 APP_NAME,
-                "No faces detected. Run 'Auto Detect Faces' first."
+                "No images selected. Please select thumbnails to process."
+            )
+            return
+            
+        # Get images with faces or manual regions within selection
+        processing_data = []
+        for path in selected_paths:
+            img_data = self._data_manager.get(path)
+            if img_data and (img_data.faces or img_data.manual_regions):
+                # Prepare data dictionary manually or via helper
+                # Since get_processing_data() returns all, we build list manually or filter
+                processing_data.append({
+                    'path': path,
+                    'faces': img_data.faces,
+                    'manual_regions': img_data.manual_regions,
+                    'mode': img_data.mode
+                })
+        
+        if not processing_data:
+            QMessageBox.information(
+                self,
+                APP_NAME,
+                "Selected images have no detected faces or manual regions."
             )
             return
         
         # Start worker
-        self._processing_worker = ProcessingWorker(valid_data, effect)
+        self._processing_worker = ProcessingWorker(processing_data, effect)
         self._processing_worker.image_processed.connect(self._on_image_processed)
         self._processing_worker.progress.connect(self._on_processing_progress)
         self._processing_worker.finished.connect(self._on_processing_finished)
@@ -386,6 +409,43 @@ class MainWindow(QMainWindow):
         self.status_label.setText(tr("status.processing"))
         
         self._processing_worker.start()
+
+    def _revert_mosaic(self):
+        """Revert selected images to original."""
+        selected_paths = self.thumbnail_grid.selected_paths
+        
+        # If no selection, ask to revert all
+        if not selected_paths:
+            reply = QMessageBox.question(
+                self,
+                APP_NAME,
+                "Revert all processed images to original?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            
+            if reply == QMessageBox.Yes:
+                selected_paths = list(self._processed_images.keys())
+            else:
+                return
+        
+        for path in selected_paths:
+            if path in self._processed_images:
+                # Remove from processed cache
+                del self._processed_images[path]
+                
+                # Reset data status
+                img_data = self._data_manager.get(path)
+                if img_data:
+                    img_data.is_processed = False
+                
+                # Regenerate original thumbnail
+                original = self._image_processor.load_image(path)
+                if original is not None:
+                    thumb = self._image_processor.generate_thumbnail(original)
+                    self.thumbnail_grid.update_thumbnail(path, thumb)
+                    
+        self.status_label.setText("Reverted to original.")
     
     def _on_image_processed(self, path: str, processed_image):
         """Handle processed image."""

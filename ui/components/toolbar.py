@@ -35,6 +35,8 @@ class MainToolbar(QToolBar):
     auto_detect = Signal()
     apply_mosaic = Signal()
     apply_blur = Signal()
+    revert_mosaic = Signal()
+    select_all = Signal()
     
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -79,6 +81,16 @@ class MainToolbar(QToolBar):
         
         self.addSeparator()
         
+        # === Selection ===
+        
+        # Select All action
+        self.select_all_action = QAction(tr("toolbar.select_all"), self)
+        self.select_all_action.setShortcut("Ctrl+A")
+        self.select_all_action.triggered.connect(self.select_all.emit)
+        self.addAction(self.select_all_action)
+        
+        self.addSeparator()
+        
         # === Processing ===
         
         # Auto detect action
@@ -98,6 +110,12 @@ class MainToolbar(QToolBar):
         self.blur_action.setShortcut("Ctrl+B")
         self.blur_action.triggered.connect(self.apply_blur.emit)
         self.addAction(self.blur_action)
+        
+        # Revert action
+        self.revert_action = QAction(tr("toolbar.revert"), self)
+        self.revert_action.setShortcut("Ctrl+Z")
+        self.revert_action.triggered.connect(self.revert_mosaic.emit)
+        self.addAction(self.revert_action)
         
         self.addSeparator()
         
@@ -128,8 +146,10 @@ class MainToolbar(QToolBar):
         """Update action text after language change."""
         self.open_action.setText(tr("toolbar.open"))
         self.open_folder_action.setText(tr("menu.file.open_folder"))
+        self.select_all_action.setText(tr("toolbar.select_all"))
         self.auto_action.setText(tr("toolbar.auto"))
         self.mosaic_action.setText(tr("toolbar.mosaic"))
         self.blur_action.setText(tr("toolbar.blur"))
+        self.revert_action.setText(tr("toolbar.revert"))
         self.save_action.setText(tr("toolbar.save"))
         self.export_action.setText(tr("toolbar.export"))

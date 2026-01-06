@@ -52,6 +52,8 @@
         "manual": "Manual Mode",
         "mosaic": "Mosaic",
         "blur": "Blur",
+        "revert": "Revert",
+        "select_all": "Select All",
         "export": "Export"
     },
     "panel": {

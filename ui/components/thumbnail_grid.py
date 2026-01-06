@@ -266,17 +266,41 @@ class ThumbnailGrid(QScrollArea):
             col = i % self._columns
             self.grid_layout.addWidget(item, row, col)
     
+    
+    def select_all(self):
+        """Select all items."""
+        for path, item in self._items.items():
+            if path not in self._selected_paths:
+                self._selected_paths.append(path)
+                item.set_selected(True)
+        self.selection_changed.emit(self._selected_paths)
+        
+    def deselect_all(self):
+        """Deselect all items."""
+        for path in self._selected_paths:
+            if path in self._items:
+                self._items[path].set_selected(False)
+        self._selected_paths.clear()
+        self.selection_changed.emit(self._selected_paths)
+        
+    def toggle_select_all(self):
+        """Toggle select all / deselect all."""
+        if len(self._selected_paths) == len(self._items) and len(self._items) > 0:
+            self.deselect_all()
+        else:
+            self.select_all()
+            
     def _on_item_clicked(self, path: str):
         """Handle thumbnail click."""
-        # Clear previous selection
-        for p in self._selected_paths:
-            if p in self._items:
-                self._items[p].set_selected(False)
-        
-        # Set new selection
-        self._selected_paths = [path]
-        if path in self._items:
-            self._items[path].set_selected(True)
+        # Toggle selection for this item
+        if path in self._selected_paths:
+            self._selected_paths.remove(path)
+            if path in self._items:
+                self._items[path].set_selected(False)
+        else:
+            self._selected_paths.append(path)
+            if path in self._items:
+                self._items[path].set_selected(True)
         
         self.item_clicked.emit(path)
         self.selection_changed.emit(self._selected_paths)
