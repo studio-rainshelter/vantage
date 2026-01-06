@@ -43,12 +43,16 @@ class ROICanvas(QLabel):
         # Regions
         self._regions: List[ManualRegion] = []
         self._selected_index: int = -1
-        
         # Drawing state
         self._drawing = False
         self._draw_start: Optional[QPoint] = None
         self._draw_current: Optional[QPoint] = None
         self._freehand_points: List[QPoint] = []  # For freehand drawing
+        
+        # Panning state
+        self._panning = False
+        self._pan_start: Optional[QPoint] = None
+        self._pan_start_offset: Optional[QPoint] = None
         
         # Settings
         self._show_ruler = True
@@ -194,24 +198,26 @@ class ROICanvas(QLabel):
     def mousePressEvent(self, event: QMouseEvent):
         """Handle mouse press."""
         if event.button() == Qt.LeftButton:
-            # Check if clicking on existing region
-            index = self._get_region_at(event.pos())
+            # Check for existing region - ONLY in selection mode
+            index = -1
+            if self._current_shape is None:  # Selection Mode
+                index = self._get_region_at(event.pos())
             
             if index >= 0:
-                # Select existing region
+                # Select existing region (Selection Mode only)
                 self._selected_index = index
                 self.region_selected.emit(index)
                 self.update()
             else:
-                # Clicked empty space
-                if self._selected_index != -1:
-                    # Deselect
+                # Clicked empty space or in Drawing Mode
+                if self._selected_index != -1 and self._current_shape is None:
+                    # Deselect if clicked empty space in selection mode
                     self._selected_index = -1
                     self.region_selected.emit(-1)
                     self.update()
                 
-                # Start drawing only if shape is selected
                 if self._current_shape is not None:
+                    # Drawing Mode: Start drawing
                     self._drawing = True
                     self._draw_start = event.pos()
                     self._draw_current = event.pos()
@@ -219,6 +225,11 @@ class ROICanvas(QLabel):
                     # Clear freehand points for new drawing
                     if self._current_shape == RegionShape.FREEHAND:
                         self._freehand_points = [event.pos()]
+                else:
+                    # Selection Mode + Empty Space: Start Panning
+                    self._panning = True
+                    self._pan_start = event.pos()
+                    self._pan_start_offset = QPoint(self._offset)
         
         elif event.button() == Qt.RightButton:
             # Delete selected region
@@ -242,58 +253,105 @@ class ROICanvas(QLabel):
                         self._freehand_points.append(event.pos())
             
             self.update()
+            
+        elif self._panning and self._pan_start:
+            # Handle Panning
+            delta = event.pos() - self._pan_start
+            self._offset = self._pan_start_offset + delta
+            self.update()
     
     def mouseReleaseEvent(self, event: QMouseEvent):
         """Handle mouse release."""
-        if event.button() == Qt.LeftButton and self._drawing:
-            self._drawing = False
+        if event.button() == Qt.LeftButton:
+            if self._drawing:
+                self._drawing = False
+                
+                region = None
+                
+                if self._current_shape == RegionShape.FREEHAND and len(self._freehand_points) >= 3:
+                    # Create freehand region from points
+                    points = [self._widget_to_image(p) for p in self._freehand_points]
+                    
+                    # Calculate bounding box
+                    xs = [p[0] for p in points]
+                    ys = [p[1] for p in points]
+                    x, y = min(xs), min(ys)
+                    w, h = max(xs) - x, max(ys) - y
+                    
+                    if w >= 10 and h >= 10:
+                        region = ManualRegion(
+                            x=x, y=y, width=w, height=h,
+                            effect=self._current_effect,
+                            shape=RegionShape.FREEHAND,
+                            points=points
+                        )
+                    
+                    self._freehand_points = []
+                    
+                elif self._draw_start and self._draw_current:
+                    # Create rectangle or ellipse region
+                    start_x, start_y = self._widget_to_image(self._draw_start)
+                    end_x, end_y = self._widget_to_image(self._draw_current)
+                    
+                    # Ensure positive dimensions
+                    x = min(start_x, end_x)
+                    y = min(start_y, end_y)
+                    w = abs(end_x - start_x)
+                    h = abs(end_y - start_y)
+                    
+                    # Minimum size check
+                    if w >= 10 and h >= 10:
+                        region = ManualRegion(
+                            x=x, y=y, width=w, height=h,
+                            effect=self._current_effect,
+                            shape=self._current_shape
+                        )
+                
+                if region:
+                    self.add_region(region)
+                
+                self._draw_start = None
+                self._draw_current = None
+                self.update()
             
-            region = None
+            elif self._panning:
+                self._panning = False
+                self._pan_start = None
+                self.setCursor(Qt.ArrowCursor)
+
+    def wheelEvent(self, event):
+        """Handle mouse wheel for zoom."""
+        # Zoom in/out
+        delta = event.angleDelta().y()
+        # Use position().toPoint() for PySide6/Qt6 compatibility
+        center = event.position().toPoint()
+        if delta > 0:
+            self.zoom(1.1, center)
+        else:
+            self.zoom(1 / 1.1, center)
+    
+    def zoom(self, factor: float, center: Optional[QPoint] = None):
+        """Zoom canvas."""
+        if self._pixmap is None:
+            return
             
-            if self._current_shape == RegionShape.FREEHAND and len(self._freehand_points) >= 3:
-                # Create freehand region from points
-                points = [self._widget_to_image(p) for p in self._freehand_points]
+        old_scale = self._scale
+        new_scale = old_scale * factor
+        
+        # Limits
+        new_scale = max(0.1, min(new_scale, 5.0))
+        
+        if new_scale != old_scale:
+            if center is None:
+                center = QPoint(self.width() // 2, self.height() // 2)
                 
-                # Calculate bounding box
-                xs = [p[0] for p in points]
-                ys = [p[1] for p in points]
-                x, y = min(xs), min(ys)
-                w, h = max(xs) - x, max(ys) - y
-                
-                if w >= 10 and h >= 10:
-                    region = ManualRegion(
-                        x=x, y=y, width=w, height=h,
-                        effect=self._current_effect,
-                        shape=RegionShape.FREEHAND,
-                        points=points
-                    )
-                
-                self._freehand_points = []
-                
-            elif self._draw_start and self._draw_current:
-                # Create rectangle or ellipse region
-                start_x, start_y = self._widget_to_image(self._draw_start)
-                end_x, end_y = self._widget_to_image(self._draw_current)
-                
-                # Ensure positive dimensions
-                x = min(start_x, end_x)
-                y = min(start_y, end_y)
-                w = abs(end_x - start_x)
-                h = abs(end_y - start_y)
-                
-                # Minimum size check
-                if w >= 10 and h >= 10:
-                    region = ManualRegion(
-                        x=x, y=y, width=w, height=h,
-                        effect=self._current_effect,
-                        shape=self._current_shape
-                    )
+            # Adjust offset to keep center fixed
+            # (center - offset) / old_scale = image_point
+            # center - new_offset = image_point * new_scale
+            # new_offset = center - (center - offset) * (new_scale / old_scale)
             
-            if region:
-                self.add_region(region)
-            
-            self._draw_start = None
-            self._draw_current = None
+            self._offset = center - (center - self._offset) * (new_scale / old_scale)
+            self._scale = new_scale
             self.update()
     
     def paintEvent(self, event: QPaintEvent):

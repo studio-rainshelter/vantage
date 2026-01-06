@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget, QFrame, QButtonGroup, QToolButton, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtGui import QKeyEvent, QKeySequence, QShortcut
 import numpy as np
 
 from config.constants import (
@@ -139,7 +139,7 @@ class ImageViewerDialog(QDialog):
         self._select_btn = QToolButton()
         self._select_btn.setText("↖ " + tr("viewer.select"))
         self._select_btn.setCheckable(True)
-        self._shape_group.addButton(self._select_btn, -1)
+        self._shape_group.addButton(self._select_btn, 3)
         toolbar_layout.addWidget(self._select_btn)
 
         # Rectangle button
@@ -215,6 +215,11 @@ class ImageViewerDialog(QDialog):
         self._canvas.region_added.connect(self._on_region_changed)
         self._canvas.region_deleted.connect(self._on_region_changed)
         self._canvas.region_selected.connect(self._on_region_selected)
+        
+        # Zoom shortcuts
+        QShortcut(QKeySequence.ZoomIn, self, activated=lambda: self._canvas.zoom(1.2))
+        QShortcut(QKeySequence.ZoomOut, self, activated=lambda: self._canvas.zoom(1/1.2))
+        QShortcut(QKeySequence("Ctrl+="), self, activated=lambda: self._canvas.zoom(1.2))
     
     def _on_shape_changed(self, id: int):
         """Handle shape tool selection."""
@@ -223,7 +228,7 @@ class ImageViewerDialog(QDialog):
         self._canvas.update()
         self._delete_btn.setEnabled(False)
 
-        if id == -1:
+        if id == 3:
             self._canvas.set_current_shape(None)
         else:
             shapes = [RegionShape.RECTANGLE, RegionShape.ELLIPSE, RegionShape.FREEHAND]
@@ -236,7 +241,7 @@ class ImageViewerDialog(QDialog):
         self._delete_btn.setEnabled(index >= 0)
         
         # Switch to select tool if not already
-        if index >= 0 and self._shape_group.checkedId() != -1:
+        if index >= 0 and self._shape_group.checkedId() != 3:
              self._select_btn.setChecked(True)
              self._canvas.set_current_shape(None)
     
