@@ -180,7 +180,7 @@ class ImageProcessor:
     def scan_directory(
         self,
         directory: Union[str, Path],
-        recursive: bool = True
+        recursive: bool = False
     ) -> List[Path]:
         """
         Scan directory for supported image files.

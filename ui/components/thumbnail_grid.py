@@ -230,6 +230,12 @@ class ThumbnailGrid(QScrollArea):
         if path in self._items:
             item = self._items.pop(path)
             item.deleteLater()
+            
+            # Remove from selection if present
+            if path in self._selected_paths:
+                self._selected_paths.remove(path)
+                self.selection_changed.emit(self._selected_paths)
+                
             self._relayout()
     
     def clear(self):

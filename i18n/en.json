@@ -54,6 +54,7 @@
         "blur": "Blur",
         "revert": "Revert",
         "select_all": "Select All",
+        "remove": "Remove Selected",
         "export": "Export"
     },
     "panel": {

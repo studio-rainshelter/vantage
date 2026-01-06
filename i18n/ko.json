@@ -54,6 +54,7 @@
         "blur": "블러",
         "revert": "되돌리기",
         "select_all": "전체 선택",
+        "remove": "선택 삭제",
         "export": "내보내기"
     },
     "panel": {

@@ -37,6 +37,7 @@ class MainToolbar(QToolBar):
     apply_blur = Signal()
     revert_mosaic = Signal()
     select_all = Signal()
+    remove_selected = Signal()
     
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -88,6 +89,12 @@ class MainToolbar(QToolBar):
         self.select_all_action.setShortcut("Ctrl+A")
         self.select_all_action.triggered.connect(self.select_all.emit)
         self.addAction(self.select_all_action)
+        
+        # Remove action
+        self.remove_action = QAction(tr("toolbar.remove"), self)
+        self.remove_action.setShortcut("Delete")
+        self.remove_action.triggered.connect(self.remove_selected.emit)
+        self.addAction(self.remove_action)
         
         self.addSeparator()
         
@@ -147,6 +154,7 @@ class MainToolbar(QToolBar):
         self.open_action.setText(tr("toolbar.open"))
         self.open_folder_action.setText(tr("menu.file.open_folder"))
         self.select_all_action.setText(tr("toolbar.select_all"))
+        self.remove_action.setText(tr("toolbar.remove"))
         self.auto_action.setText(tr("toolbar.auto"))
         self.mosaic_action.setText(tr("toolbar.mosaic"))
         self.blur_action.setText(tr("toolbar.blur"))

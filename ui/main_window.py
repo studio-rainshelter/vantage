@@ -189,6 +189,7 @@ class MainWindow(QMainWindow):
         self.toolbar.apply_blur.connect(self._apply_blur)
         self.toolbar.revert_mosaic.connect(self._revert_mosaic)
         self.toolbar.select_all.connect(self.thumbnail_grid.toggle_select_all)
+        self.toolbar.remove_selected.connect(self._remove_selected_images)
         self.toolbar.save_triggered.connect(self._save_current)
         self.toolbar.export_triggered.connect(self._export_all)
         
@@ -230,8 +231,29 @@ class MainWindow(QMainWindow):
         
         if folder:
             self._settings.set('last_open_directory', folder)
+            # Scan directory (recursive=False by default now)
             images = self._image_processor.scan_directory(folder)
             self._load_images(images)
+
+    def _remove_selected_images(self):
+        """Remove selected images from the list."""
+        selected_paths = self.thumbnail_grid.selected_paths
+        
+        if not selected_paths:
+            return
+
+        for path in selected_paths:
+            # Remove from data manager
+            self._data_manager.remove(path)
+            
+            # Remove from processed cache
+            if path in self._processed_images:
+                del self._processed_images[path]
+                
+            # Remove from thumbnail grid
+            self.thumbnail_grid.remove_thumbnail(path)
+            
+        self._update_status()
     
     def _load_images(self, paths: List[Path]):
         """Load images asynchronously."""
