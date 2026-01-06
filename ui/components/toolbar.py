@@ -31,7 +31,7 @@ class MainToolbar(QToolBar):
     open_files = Signal()
     open_folder = Signal()
     save_triggered = Signal()
-    export_triggered = Signal()
+    save_all_triggered = Signal()
     auto_detect = Signal()
     apply_mosaic = Signal()
     apply_blur = Signal()
@@ -126,19 +126,19 @@ class MainToolbar(QToolBar):
         
         self.addSeparator()
         
-        # === Export ===
+        # === Save Operations ===
         
-        # Save action
+        # Save action (Selected Only)
         self.save_action = QAction(tr("toolbar.save"), self)
         self.save_action.setShortcut("Ctrl+S")
         self.save_action.triggered.connect(self.save_triggered.emit)
         self.addAction(self.save_action)
         
-        # Export action
-        self.export_action = QAction(tr("toolbar.export"), self)
-        self.export_action.setShortcut("Ctrl+E")
-        self.export_action.triggered.connect(self.export_triggered.emit)
-        self.addAction(self.export_action)
+        # Save All action (All Processed)
+        self.save_all_action = QAction(tr("toolbar.save_all"), self)
+        self.save_all_action.setShortcut("Ctrl+Shift+S")
+        self.save_all_action.triggered.connect(self.save_all_triggered.emit)
+        self.addAction(self.save_all_action)
         
         # === Spacer ===
         spacer = QWidget()
@@ -160,4 +160,4 @@ class MainToolbar(QToolBar):
         self.blur_action.setText(tr("toolbar.blur"))
         self.revert_action.setText(tr("toolbar.revert"))
         self.save_action.setText(tr("toolbar.save"))
-        self.export_action.setText(tr("toolbar.export"))
+        self.save_all_action.setText(tr("toolbar.save_all"))

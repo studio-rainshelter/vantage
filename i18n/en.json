@@ -48,14 +48,14 @@
     "toolbar": {
         "open": "Open Files",
         "save": "Save",
+        "save_all": "Save All",
         "auto": "Auto Detect",
         "manual": "Manual Mode",
         "mosaic": "Mosaic",
         "blur": "Blur",
         "revert": "Revert",
         "select_all": "Select All",
-        "remove": "Remove Selected",
-        "export": "Export"
+        "remove": "Remove Selected"
     },
     "panel": {
         "images": "Images",

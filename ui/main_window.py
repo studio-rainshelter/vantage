@@ -191,7 +191,7 @@ class MainWindow(QMainWindow):
         self.toolbar.select_all.connect(self.thumbnail_grid.toggle_select_all)
         self.toolbar.remove_selected.connect(self._remove_selected_images)
         self.toolbar.save_triggered.connect(self._save_current)
-        self.toolbar.export_triggered.connect(self._export_all)
+        self.toolbar.save_all_triggered.connect(self._save_all)
         
         # Thumbnail grid
         self.thumbnail_grid.item_double_clicked.connect(self._open_image_viewer)
@@ -426,7 +426,7 @@ class MainWindow(QMainWindow):
         
         # Show progress
         self.progress_bar.setValue(0)
-        self.progress_bar.setMaximum(len(valid_data))
+        self.progress_bar.setMaximum(len(processing_data))
         self.progress_bar.setVisible(True)
         self.status_label.setText(tr("status.processing"))
         
@@ -540,11 +540,11 @@ class MainWindow(QMainWindow):
                 img_data.mode = mode
     
     # =========================================================================
-    # EXPORT
+    # EXPORT -> SAVE ALL
     # =========================================================================
     
     def _save_current(self):
-        """Save currently selected image."""
+        """Save currently selected processed image."""
         selected = self.thumbnail_grid.selected_paths
         if not selected:
             return
@@ -577,8 +577,8 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.warning(self, APP_NAME, "Failed to save image.")
     
-    def _export_all(self):
-        """Export all processed images."""
+    def _save_all(self):
+        """Save all processed images."""
         if not self._processed_images:
             QMessageBox.information(
                 self, APP_NAME,
@@ -589,7 +589,7 @@ class MainWindow(QMainWindow):
         # Get output directory
         output_dir = QFileDialog.getExistingDirectory(
             self,
-            tr("menu.file.export_all"),
+            tr("toolbar.save_all"),
             self._settings.get('last_save_directory', '')
         )
         
@@ -611,12 +611,12 @@ class MainWindow(QMainWindow):
                 'output_path': output_path
             })
         
-        # Start export worker
+        # Start export worker (using same worker as it just saves images)
         self._export_worker = ExportWorker(export_data)
-        self._export_worker.export_complete.connect(self._on_export_complete)
-        self._export_worker.progress.connect(self._on_export_progress)
-        self._export_worker.finished.connect(self._on_export_finished)
-        self._export_worker.error.connect(self._on_export_error)
+        self._export_worker.export_complete.connect(self._on_save_all_complete)
+        self._export_worker.progress.connect(self._on_save_all_progress)
+        self._export_worker.finished.connect(self._on_save_all_finished)
+        self._export_worker.error.connect(self._on_save_all_error)
         
         # Show progress
         self.progress_bar.setValue(0)
@@ -626,28 +626,28 @@ class MainWindow(QMainWindow):
         
         self._export_worker.start()
     
-    def _on_export_complete(self, original_path: str, export_path: str):
-        """Handle single export complete."""
-        pass  # Could show notification
+    def _on_save_all_complete(self, original_path: str, export_path: str):
+        """Handle single image save complete."""
+        pass 
     
-    def _on_export_progress(self, current: int, total: int):
-        """Update export progress."""
+    def _on_save_all_progress(self, current: int, total: int):
+        """Update save all progress."""
         self.progress_bar.setValue(current)
     
-    def _on_export_finished(self):
-        """Handle export complete."""
+    def _on_save_all_finished(self):
+        """Handle save all complete."""
         self.progress_bar.setVisible(False)
         self.status_label.setText(tr("status.complete"))
         self._export_worker = None
         
         QMessageBox.information(
             self, APP_NAME,
-            f"Exported {len(self._processed_images)} images successfully."
+            f"Saved {len(self._processed_images)} images successfully."
         )
     
-    def _on_export_error(self, path: str, error: str):
-        """Handle export error."""
-        print(f"[MainWindow] Export failed for {path}: {error}")
+    def _on_save_all_error(self, path: str, error: str):
+        """Handle save all error."""
+        print(f"[MainWindow] Save All failed for {path}: {error}")
     
     # =========================================================================
     # IMAGE VIEWER

@@ -48,14 +48,14 @@
     "toolbar": {
         "open": "파일 열기",
         "save": "저장",
+        "save_all": "모두 저장",
         "auto": "자동 감지",
         "manual": "수동 모드",
         "mosaic": "모자이크",
         "blur": "블러",
         "revert": "되돌리기",
         "select_all": "전체 선택",
-        "remove": "선택 삭제",
-        "export": "내보내기"
+        "remove": "선택 삭제"
     },
     "panel": {
         "images": "이미지",
