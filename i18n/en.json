@@ -1,0 +1,110 @@
+{
+    "app": {
+        "name": "VANTAGE",
+        "title": "Visual Anonymization & Tactical Graphics Editor"
+    },
+    "menu": {
+        "file": {
+            "title": "File",
+            "open": "Open",
+            "open_folder": "Open Folder",
+            "save": "Save",
+            "save_as": "Save As",
+            "export": "Export",
+            "export_all": "Export All",
+            "exit": "Exit"
+        },
+        "edit": {
+            "title": "Edit",
+            "undo": "Undo",
+            "redo": "Redo",
+            "select_all": "Select All",
+            "deselect": "Deselect All"
+        },
+        "view": {
+            "title": "View",
+            "zoom_in": "Zoom In",
+            "zoom_out": "Zoom Out",
+            "fit_to_window": "Fit to Window",
+            "actual_size": "Actual Size",
+            "show_ruler": "Show Ruler"
+        },
+        "process": {
+            "title": "Process",
+            "auto_detect": "Auto Detect Faces",
+            "apply_mosaic": "Apply Mosaic",
+            "apply_blur": "Apply Blur",
+            "clear_regions": "Clear Regions"
+        },
+        "settings": {
+            "title": "Settings",
+            "preferences": "Preferences"
+        },
+        "help": {
+            "title": "Help",
+            "about": "About"
+        }
+    },
+    "toolbar": {
+        "open": "Open Files",
+        "save": "Save",
+        "auto": "Auto Detect",
+        "manual": "Manual Mode",
+        "mosaic": "Mosaic",
+        "blur": "Blur",
+        "export": "Export"
+    },
+    "panel": {
+        "images": "Images",
+        "inspector": "Inspector",
+        "properties": "Properties"
+    },
+    "mode": {
+        "auto": "Auto",
+        "manual": "Manual",
+        "override": "Override",
+        "append": "Append"
+    },
+    "status": {
+        "ready": "Ready",
+        "loading": "Loading...",
+        "processing": "Processing...",
+        "complete": "Complete",
+        "error": "Error",
+        "images_loaded": "{count} images loaded",
+        "faces_detected": "{count} faces detected"
+    },
+    "dialog": {
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "ok": "OK",
+        "yes": "Yes",
+        "no": "No",
+        "save_changes": "Save changes before closing?",
+        "unsaved_changes": "You have unsaved changes."
+    },
+    "inspector": {
+        "title": "Image Inspector",
+        "filename": "Filename",
+        "dimensions": "Dimensions",
+        "faces": "Detected Faces",
+        "manual_regions": "Manual Regions",
+        "mode": "Mode"
+    },
+    "empty": {
+        "title": "No Images Loaded",
+        "subtitle": "Drag and drop images or folders here",
+        "or": "or",
+        "browse": "Browse Files"
+    },
+    "viewer": {
+        "shape": "Tool",
+        "rectangle": "Rectangle",
+        "ellipse": "Ellipse",
+        "freehand": "Freehand",
+        "select": "Select",
+        "delete_selected": "Delete Selected",
+        "clear": "Clear All",
+        "regions": "regions"
+    }
+}
