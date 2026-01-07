@@ -7,17 +7,16 @@ Application preferences and configuration.
 from typing import Optional
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QComboBox, QSpinBox, QDoubleSpinBox, QGroupBox, QFormLayout
+    QSpinBox, QDoubleSpinBox, QGroupBox, QFormLayout, QWidget
 )
 from PySide6.QtCore import Qt
 
 from config import Settings
 from config.constants import (
-    COLOR_BASE, COLOR_BORDER, COLOR_TEXT,
-    MOSAIC_BLOCK_SIZE, BLUR_KERNEL_SIZE, FACE_DETECTION_CONFIDENCE,
-    SUPPORTED_LANGUAGES
+    MOSAIC_BLOCK_SIZE, BLUR_KERNEL_SIZE
 )
-from i18n import tr, Translator
+from ui.styles import Styles
+from i18n import tr
 
 
 class SettingsDialog(QDialog):
@@ -25,17 +24,15 @@ class SettingsDialog(QDialog):
     Settings/preferences dialog.
     
     Allows user to configure:
-    - Default language
     - Mosaic block size
     - Blur kernel size
-    - Face detection confidence
+    - Face detection parameters (Neighbors, Scale, IOU)
     """
     
     def __init__(self, parent=None):
         super().__init__(parent)
         
         self._settings = Settings()
-        self._translator = Translator()
         
         self._setup_ui()
         self._load_settings()
@@ -43,61 +40,129 @@ class SettingsDialog(QDialog):
     def _setup_ui(self):
         """Initialize dialog UI."""
         self.setWindowTitle(tr("menu.settings.preferences"))
-        self.setMinimumWidth(400)
+        self.setMinimumWidth(450) # Slightly wider for descriptions
+        
+        # Determine colors dynamically based on current theme
+        c = Styles.get_theme_colors()
+        
         self.setStyleSheet(f"""
             QDialog {{
-                background-color: {COLOR_BASE};
-                color: {COLOR_TEXT};
+                background-color: {c['COLOR_BASE']};
+                color: {c['COLOR_TEXT']};
             }}
             QGroupBox {{
-                border: 1px solid {COLOR_BORDER};
-                margin-top: 16px;
+                border: 1px solid {c['COLOR_BORDER']};
+                margin-top: 24px;
                 padding-top: 16px;
                 font-weight: bold;
+                color: {c['COLOR_TEXT']};
+                background-color: transparent;
             }}
             QGroupBox::title {{
                 subcontrol-origin: margin;
                 left: 8px;
                 padding: 0 4px;
+                background-color: {c['COLOR_BASE']};
+            }}
+            QLabel {{
+                color: {c['COLOR_TEXT']};
+            }}
+            QLabel.hint {{
+                color: {c['COLOR_TEXT_DIM']};
+                font-size: 11px;
+                font-weight: normal;
+                margin-bottom: 4px;
+            }}
+            QSpinBox, QDoubleSpinBox {{
+                background-color: {c['COLOR_BASE_LIGHT']};
+                color: {c['COLOR_TEXT']};
+                border: 1px solid {c['COLOR_BORDER']};
+                padding: 4px;
+                min-width: 80px;
+            }}
+            QPushButton {{
+                background-color: {c['COLOR_BASE_LIGHT']};
+                color: {c['COLOR_TEXT']};
+                border: 1px solid {c['COLOR_BORDER']};
+                padding: 6px 16px;
+            }}
+            QPushButton:hover {{
+                background-color: {c['COLOR_BORDER_FOCUS']};
+            }}
+            QPushButton[class="primary"] {{
+                background-color: {c['COLOR_ACCENT']};
+                color: {c['COLOR_TEXT_ACCENT']};
+                border-color: {c['COLOR_ACCENT']};
             }}
         """)
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(16)
-        
-        # Language group
-        lang_group = QGroupBox("Language / 언어")
-        lang_layout = QFormLayout(lang_group)
-        
-        self.lang_combo = QComboBox()
-        self.lang_combo.addItem("English", "en")
-        self.lang_combo.addItem("한국어", "ko")
-        lang_layout.addRow("Language:", self.lang_combo)
-        
-        layout.addWidget(lang_group)
+        layout.setSpacing(20)
         
         # Processing group
         proc_group = QGroupBox(tr("menu.process.title"))
         proc_layout = QFormLayout(proc_group)
+        proc_layout.setSpacing(12)
         
         self.block_size_spin = QSpinBox()
         self.block_size_spin.setRange(2, 50)
         self.block_size_spin.setValue(MOSAIC_BLOCK_SIZE)
-        proc_layout.addRow("Mosaic Block Size:", self.block_size_spin)
         
         self.blur_spin = QSpinBox()
         self.blur_spin.setRange(3, 101)
         self.blur_spin.setSingleStep(2)
         self.blur_spin.setValue(BLUR_KERNEL_SIZE)
-        proc_layout.addRow("Blur Kernel Size:", self.blur_spin)
         
-        self.confidence_spin = QDoubleSpinBox()
-        self.confidence_spin.setRange(0.1, 1.0)
-        self.confidence_spin.setSingleStep(0.1)
-        self.confidence_spin.setValue(FACE_DETECTION_CONFIDENCE)
-        proc_layout.addRow("Detection Confidence:", self.confidence_spin)
+        proc_layout.addRow(tr("settings.mosaic_size") + ":", self.block_size_spin)
+        proc_layout.addRow(tr("settings.blur_size") + ":", self.blur_spin)
         
         layout.addWidget(proc_group)
+        
+        # Face Detection Group
+        face_group = QGroupBox(tr("settings.face_detection"))
+        face_layout = QFormLayout(face_group)
+        face_layout.setSpacing(16) # More spacing for descriptions
+        
+        # Helper to add row with description
+        def add_setting(label_key, widget, hint_key=None):
+            label = QLabel(tr(label_key) + ":")
+            
+            container = QWidget()
+            v_layout = QVBoxLayout(container)
+            v_layout.setContentsMargins(0, 0, 0, 0)
+            v_layout.setSpacing(4)
+            
+            v_layout.addWidget(widget)
+            
+            if hint_key:
+                hint = QLabel(tr(hint_key))
+                hint.setProperty("class", "hint")
+                hint.setWordWrap(True)
+                v_layout.addWidget(hint)
+            
+            face_layout.addRow(label, container)
+        
+        # Min Neighbors
+        self.min_neighbors_spin = QSpinBox()
+        self.min_neighbors_spin.setRange(1, 15)
+        self.min_neighbors_spin.setValue(6)
+        add_setting("settings.min_neighbors", self.min_neighbors_spin, "settings.hint_neighbors")
+        
+        # Scale Factor
+        self.scale_factor_spin = QDoubleSpinBox()
+        self.scale_factor_spin.setRange(1.01, 1.5)
+        self.scale_factor_spin.setSingleStep(0.01)
+        self.scale_factor_spin.setValue(1.1)
+        add_setting("settings.scale_factor", self.scale_factor_spin, "settings.hint_scale")
+        
+        # IOU Threshold
+        self.iou_spin = QDoubleSpinBox()
+        self.iou_spin.setRange(0.1, 1.0)
+        self.iou_spin.setSingleStep(0.1)
+        self.iou_spin.setValue(0.3)
+        add_setting("settings.iou_threshold", self.iou_spin, "settings.hint_iou")
+        
+        layout.addWidget(face_group)
         
         # Buttons
         btn_layout = QHBoxLayout()
@@ -116,12 +181,6 @@ class SettingsDialog(QDialog):
     
     def _load_settings(self):
         """Load current settings into UI."""
-        # Language
-        lang = self._settings.language
-        index = self.lang_combo.findData(lang)
-        if index >= 0:
-            self.lang_combo.setCurrentIndex(index)
-        
         # Processing
         self.block_size_spin.setValue(
             self._settings.get('mosaic_block_size', MOSAIC_BLOCK_SIZE)
@@ -129,22 +188,28 @@ class SettingsDialog(QDialog):
         self.blur_spin.setValue(
             self._settings.get('blur_kernel_size', BLUR_KERNEL_SIZE)
         )
-        self.confidence_spin.setValue(
-            self._settings.get('face_detection_confidence', FACE_DETECTION_CONFIDENCE)
+        
+        # Face Detection
+        self.min_neighbors_spin.setValue(
+            self._settings.get('face_min_neighbors', 6)
+        )
+        self.scale_factor_spin.setValue(
+            self._settings.get('face_scale_factor', 1.1)
+        )
+        self.iou_spin.setValue(
+            self._settings.get('face_iou_threshold', 0.3)
         )
     
     def _save_and_close(self):
         """Save settings and close dialog."""
-        # Language
-        new_lang = self.lang_combo.currentData()
-        if new_lang != self._settings.language:
-            self._settings.language = new_lang
-            self._translator.set_language(new_lang)
-        
         # Processing
         self._settings.set('mosaic_block_size', self.block_size_spin.value())
         self._settings.set('blur_kernel_size', self.blur_spin.value())
-        self._settings.set('face_detection_confidence', self.confidence_spin.value())
+        
+        # Face Detection
+        self._settings.set('face_min_neighbors', self.min_neighbors_spin.value())
+        self._settings.set('face_scale_factor', self.scale_factor_spin.value())
+        self._settings.set('face_iou_threshold', self.iou_spin.value())
         
         self._settings.save()
         self.accept()

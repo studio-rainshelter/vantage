@@ -79,6 +79,10 @@ class MainWindow(QMainWindow):
         
         # Language observer
         self._translator.add_observer(self._on_language_changed)
+        
+        # Initialize language from settings
+        current_lang = self._settings.language
+        self._translator.set_language(current_lang)
     
     def _setup_window(self):
         """Configure main window properties."""
@@ -208,6 +212,9 @@ class MainWindow(QMainWindow):
         
         # Theme
         self.toolbar.theme_toggled.connect(self._toggle_theme)
+        
+        # Settings
+        self.toolbar.settings_triggered.connect(self._show_settings)
     
     # =========================================================================
     # FILE OPERATIONS

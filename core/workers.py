@@ -89,8 +89,15 @@ class FaceDetectionWorker(QThread):
     ):
         super().__init__(parent)
         
+        from config import Settings
+        settings = Settings()
+        
         self._paths = image_paths
-        self._detector = FaceDetector()
+        self._detector = FaceDetector(
+            min_neighbors=settings.get('face_min_neighbors', 6),
+            scale_factor=settings.get('face_scale_factor', 1.1),
+            iou_threshold=settings.get('face_iou_threshold', 0.3)
+        )
         self._processor = ImageProcessor()
         self._cancelled = False
     

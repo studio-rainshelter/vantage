@@ -41,6 +41,7 @@ class MainToolbar(QToolBar):
     select_all = Signal()
     remove_selected = Signal()
     theme_toggled = Signal()
+    settings_triggered = Signal()
     
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -138,6 +139,14 @@ class MainToolbar(QToolBar):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.addWidget(spacer)
         
+        # === Settings Button ===
+        self.settings_btn = QPushButton("⚙")
+        self.settings_btn.setToolTip(tr("menu.settings.preferences"))
+        self.settings_btn.setStyleSheet(Styles.get_language_switcher_style())
+        self.settings_btn.setCursor(Qt.PointingHandCursor)
+        self.settings_btn.clicked.connect(self.settings_triggered.emit)
+        self.addWidget(self.settings_btn)
+
         # === Language Switcher (Right side) ===
         self.lang_switcher = LanguageSwitcher()
         self.addWidget(self.lang_switcher)

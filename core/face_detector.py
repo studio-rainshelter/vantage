@@ -37,17 +37,30 @@ class FaceDetector:
     """
     OpenCV-based face detection.
     
-    Uses multiple Haar Cascades (Frontal + Profile) with aggressive settings
-    to maximize detection rate.
+    Uses multiple Haar Cascades (Frontal + Profile) with NMS to
+    maximize detection rate while reducing false positives.
     """
     
-    def __init__(self, min_confidence: float = FACE_DETECTION_CONFIDENCE):
+    def __init__(
+        self, 
+        min_confidence: float = FACE_DETECTION_CONFIDENCE,
+        min_neighbors: int = 6,
+        scale_factor: float = 1.1,
+        iou_threshold: float = 0.3
+    ):
         """
         Initialize the face detector.
         
         Args:
             min_confidence: Unused in Haar Cascade (kept for API compatibility)
+            min_neighbors: Higher value = fewer false positives, lower recall
+            scale_factor: Scale factor for multiscale detection
+            iou_threshold: Threshold for Non-Maximum Suppression
         """
+        self._min_neighbors = min_neighbors
+        self._scale_factor = scale_factor
+        self._iou_threshold = iou_threshold
+        
         self._haar_cascades = []
         self._initialized = False
     
@@ -59,9 +72,9 @@ class FaceDetector:
         self._haar_cascades = []
         
         # Cascades to try (Order matters: most specific to most general)
+        # Removed 'haarcascade_frontalface_default.xml' as it produces too many false positives
         cascade_names = [
             'haarcascade_frontalface_alt2.xml',  # Often best performance
-            'haarcascade_frontalface_default.xml',
             'haarcascade_frontalface_alt.xml',
             'haarcascade_profileface.xml'
         ]
@@ -153,28 +166,70 @@ class FaceDetector:
         for cascade in self._haar_cascades:
             faces = cascade.detectMultiScale(
                 gray,
-                scaleFactor=1.05,  # 1.05 = High granular search (slower but finds more)
-                minNeighbors=3,    # 3 = High sensitivity (more false positives possible)
-                minSize=(30, 30),  # Minimum face size
+                scaleFactor=self._scale_factor,
+                minNeighbors=self._min_neighbors,
+                minSize=(30, 30),
                 flags=cv2.CASCADE_SCALE_IMAGE
             )
             for (x, y, w, h) in faces:
-                all_rects.append((x, y, w, h))
-                
-        # Simple deduplication (NMS-like) not implemented to maximize safety.
-        # We process all detected regions.
+                all_rects.append((x, y, w, h, 1.0))
+        
+        if not all_rects:
+            return []
+        
+        # Apply NMS
+        kept_rects = self._nms(all_rects, self._iou_threshold)
         
         regions: List[FaceRegion] = []
-        for (x, y, w, h) in all_rects:
+        for (x, y, w, h, conf) in kept_rects:
             regions.append(FaceRegion(
                 x=int(x),
                 y=int(y),
                 width=int(w),
                 height=int(h),
-                confidence=1.0  # Haar doesn't provide confidence
+                confidence=conf
             ))
             
         return regions
+
+    def _nms(self, rects: List[Tuple[int, int, int, int, float]], iou_thresh: float) -> List[Tuple[int, int, int, int, float]]:
+        """
+        Apply non-maximum suppression to a list of bounding boxes.
+        """
+        if not rects:
+            return []
+
+        # Convert to (x1, y1, x2, y2)
+        boxes = np.array([[x, y, x + w, y + h] for x, y, w, h, _ in rects])
+        
+        x1 = boxes[:, 0]
+        y1 = boxes[:, 1]
+        x2 = boxes[:, 2]
+        y2 = boxes[:, 3]
+        
+        area = (x2 - x1 + 1) * (y2 - y1 + 1)
+        idxs = np.array(range(len(rects))) # Haar returns no scores, so just use order
+        
+        pick = []
+        
+        while len(idxs) > 0:
+            last = len(idxs) - 1
+            i = idxs[last]
+            pick.append(i)
+            
+            xx1 = np.maximum(x1[i], x1[idxs[:last]])
+            yy1 = np.maximum(y1[i], y1[idxs[:last]])
+            xx2 = np.minimum(x2[i], x2[idxs[:last]])
+            yy2 = np.minimum(y2[i], y2[idxs[:last]])
+            
+            w = np.maximum(0, xx2 - xx1 + 1)
+            h = np.maximum(0, yy2 - yy1 + 1)
+            
+            overlap = (w * h) / area[idxs[:last]]
+            
+            idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > iou_thresh)[0])))
+            
+        return [rects[i] for i in pick]
 
     def _map_from_90(self, face: FaceRegion, orig_h: int, orig_w: int) -> FaceRegion:
         """Map coordinates from 90 deg CW rotated image back to original."""
