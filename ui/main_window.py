@@ -363,12 +363,14 @@ class MainWindow(QMainWindow):
         # Update size in data manager
         w, h = size
         img_data = self._data_manager.get(path)
+        manual_regions = []
         if img_data:
             img_data.width = w
             img_data.height = h
+            manual_regions = img_data.manual_regions
             
-        # Update thumbnail overlay
-        self.thumbnail_grid.set_overlays(path, faces, [], w, h)
+        # Update thumbnail overlay - Preserve manual regions!
+        self.thumbnail_grid.set_overlays(path, faces, manual_regions, w, h)
         
         # If this is the current inspector image, update inspector too
         if self.inspector.current_path == path:

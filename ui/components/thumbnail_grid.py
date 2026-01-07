@@ -159,9 +159,9 @@ class ThumbnailItem(QFrame):
             scale_y = h / self._original_size[1]
             scale = min(scale_x, scale_y) # Uniform scaling
             
-            # Draw Faces (Red)
+            # Draw Faces (Blue)
             if self._faces:
-                painter.setPen(QPen(QColor(255, 50, 50), 2))
+                painter.setPen(QPen(QColor(0, 120, 255), 2))
                 painter.setBrush(Qt.NoBrush)
                 for face in self._faces:
                     # Check if face is object or tuple/list
@@ -178,9 +178,9 @@ class ThumbnailItem(QFrame):
                     
                     painter.drawRect(fx, fy, fw, fh)
 
-            # Draw Manual Regions (Blue)
+            # Draw Manual Regions (Red)
             if self._manual_regions:
-                painter.setPen(QPen(QColor(0, 200, 255), 2))
+                painter.setPen(QPen(QColor(255, 50, 50), 2))
                 painter.setBrush(Qt.NoBrush)
                 for region in self._manual_regions:
                     # region is ManualRegion object with x, y, width, height

@@ -290,8 +290,8 @@ class InspectorPane(QFrame):
             from PySide6.QtGui import QPainter, QColor, QPen
             painter = QPainter(pixmap)
             
-            # Draw Faces (Red)
-            pen_face = QPen(QColor(255, 50, 50), 2)
+            # Draw Faces (Blue)
+            pen_face = QPen(QColor(0, 120, 255), 2)
             painter.setPen(pen_face)
             for face in self._faces:
                 if hasattr(face, 'x'):
@@ -300,8 +300,8 @@ class InspectorPane(QFrame):
                     x, y, fw, fh = face
                 painter.drawRect(x, y, fw, fh)
                 
-            # Draw Manual Regions (Blue/Cyan)
-            pen_manual = QPen(QColor(0, 200, 255), 2)
+            # Draw Manual Regions (Red)
+            pen_manual = QPen(QColor(255, 50, 50), 2)
             painter.setPen(pen_manual)
             for region in self._manual_regions:
                 # region is ManualRegion object
