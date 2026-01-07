@@ -32,6 +32,7 @@ class MainToolbar(QToolBar):
     open_folder = Signal()
     save_triggered = Signal()
     save_all_triggered = Signal()
+    
     auto_detect = Signal()
     apply_mosaic = Signal()
     apply_blur = Signal()
@@ -139,7 +140,7 @@ class MainToolbar(QToolBar):
         self.save_all_action.setShortcut("Ctrl+Shift+S")
         self.save_all_action.triggered.connect(self.save_all_triggered.emit)
         self.addAction(self.save_all_action)
-        
+
         # === Spacer ===
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)

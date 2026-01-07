@@ -55,7 +55,11 @@
         "blur": "블러",
         "revert": "되돌리기",
         "select_all": "전체 선택",
-        "remove": "선택 삭제"
+        "remove": "선택 삭제",
+        "inspector": "인스펙터"
+    },
+    "tooltip": {
+        "inspector": "인스펙터 패널 토글"
     },
     "panel": {
         "images": "이미지",
@@ -67,6 +71,12 @@
         "manual": "수동",
         "override": "덮어쓰기",
         "append": "추가"
+    },
+    "mode_desc": {
+        "auto": "자동으로 감지된 얼굴에만 효과를 적용합니다.",
+        "manual": "사용자가 지정한 수동 영역에만 효과를 적용합니다.",
+        "override": "수동 영역이 있으면 우선 적용하고, 없으면 자동 감지를 사용합니다.",
+        "append": "자동 감지된 얼굴과 수동 영역 모두에 효과를 적용합니다."
     },
     "status": {
         "ready": "준비",
@@ -92,7 +102,8 @@
         "dimensions": "크기",
         "faces": "감지된 얼굴",
         "manual_regions": "수동 영역",
-        "mode": "모드"
+        "mode": "모드",
+        "save": "저장"
     },
     "empty": {
         "title": "로드된 이미지 없음",

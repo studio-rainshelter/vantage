@@ -55,7 +55,11 @@
         "blur": "Blur",
         "revert": "Revert",
         "select_all": "Select All",
-        "remove": "Remove Selected"
+        "remove": "Remove Selected",
+        "inspector": "Inspector"
+    },
+    "tooltip": {
+        "inspector": "Toggle Inspector Panel"
     },
     "panel": {
         "images": "Images",
@@ -67,6 +71,12 @@
         "manual": "Manual",
         "override": "Override",
         "append": "Append"
+    },
+    "mode_desc": {
+        "auto": "Apply effect only to automatically detected faces.",
+        "manual": "Apply effect only to user-defined manual regions.",
+        "override": "Manual regions take precedence. Auto-detection is used only if no manual regions exist.",
+        "append": "Apply effect to both automatically detected faces and manual regions."
     },
     "status": {
         "ready": "Ready",
@@ -92,7 +102,8 @@
         "dimensions": "Dimensions",
         "faces": "Detected Faces",
         "manual_regions": "Manual Regions",
-        "mode": "Mode"
+        "mode": "Mode",
+        "save": "Save"
     },
     "empty": {
         "title": "No Images Loaded",

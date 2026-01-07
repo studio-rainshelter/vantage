@@ -118,9 +118,9 @@ class MainWindow(QMainWindow):
         self.thumbnail_grid = ThumbnailGrid()
         content_layout.addWidget(self.thumbnail_grid, 1)
         
-        # Inspector pane (hidden by default)
+        # Inspector pane
         self.inspector = InspectorPane()
-        self.inspector.hide()
+        self.inspector.show_panel()  # Open by default
         content_layout.addWidget(self.inspector)
         
         content_widget = QWidget()
@@ -195,6 +195,7 @@ class MainWindow(QMainWindow):
         
         # Thumbnail grid
         self.thumbnail_grid.item_double_clicked.connect(self._open_image_viewer)
+        self.thumbnail_grid.item_clicked.connect(self._on_image_selected)
         
         # Inspector
         self.inspector.close_requested.connect(self._close_inspector)
@@ -532,13 +533,6 @@ class MainWindow(QMainWindow):
                 img_data.clear_manual_regions()
                 self.thumbnail_grid.set_manual_edit(path, False)
     
-    def _on_mode_changed(self, mode: str):
-        """Handle mode change from inspector."""
-        if self.inspector._current_path:
-            img_data = self._data_manager.get(self.inspector._current_path)
-            if img_data:
-                img_data.mode = mode
-    
     # =========================================================================
     # EXPORT -> SAVE ALL
     # =========================================================================
@@ -695,13 +689,28 @@ class MainWindow(QMainWindow):
         h, w = image.shape[:2]
         img_data = self._data_manager.get(path)
         face_count = img_data.face_count if img_data else 0
+        mode = img_data.mode if img_data else None
         
-        self.inspector.set_image(path, image, (w, h), face_count)
+        self.inspector.set_image(path, image, (w, h), face_count, mode)
         self.inspector.show_panel()
-    
+        
     def _close_inspector(self):
-        """Close the inspector pane."""
-        pass  # Animation handles hide
+        """Handle inspector closing."""
+        # Persistent inspector doesn't close via this method anymore
+        pass
+            
+    def _on_image_selected(self, path: str):
+        """Handle image selection in grid."""
+        # Always update inspector
+        self._open_inspector(path)
+        
+    def _on_mode_changed(self, mode: str):
+        """Handle mode change from inspector."""
+        path = self.inspector.current_path
+        if path:
+            img_data = self._data_manager.get(path)
+            if img_data:
+                img_data.mode = mode
     
     # =========================================================================
     # DIALOGS

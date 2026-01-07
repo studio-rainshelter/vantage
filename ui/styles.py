@@ -266,6 +266,12 @@ class Styles:
             border-color: {COLOR_ACCENT_HOVER};
         }}
         
+        QPushButton[success="true"] {{
+            background-color: {COLOR_SUCCESS};
+            border-color: {COLOR_SUCCESS};
+            color: #000000;
+        }}
+        
         /* ========================================
            LINE EDITS & INPUTS
            ======================================== */

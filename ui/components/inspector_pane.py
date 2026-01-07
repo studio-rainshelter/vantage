@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QWidget, QSizePolicy, QComboBox, QSlider
 )
-from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve
+from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve, QTimer
 from PySide6.QtGui import QPixmap, QImage
 import numpy as np
 
@@ -70,13 +70,6 @@ class InspectorPane(QFrame):
         """)
         header.addWidget(self.title_label)
         
-        header.addStretch()
-        
-        self.close_btn = QPushButton("✕")
-        self.close_btn.setFixedSize(28, 28)
-        self.close_btn.clicked.connect(self.hide_panel)
-        header.addWidget(self.close_btn)
-        
         layout.addLayout(header)
         
         # Image preview
@@ -132,15 +125,45 @@ class InspectorPane(QFrame):
         mode_layout.addWidget(self.mode_combo, 1)
         
         layout.addLayout(mode_layout)
+
+        # Mode description
+        self.mode_desc_label = QLabel()
+        self.mode_desc_label.setWordWrap(True)
+        self.mode_desc_label.setStyleSheet(f"""
+            color: {COLOR_TEXT_DIM};
+            font-size: {FONT_SIZE_SM}px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+        """)
+        layout.addWidget(self.mode_desc_label)
         
         # Spacer
         layout.addStretch()
         
         # Apply button
-        self.apply_btn = QPushButton(tr("dialog.confirm"))
+        self.apply_btn = QPushButton(tr("inspector.save"))
         self.apply_btn.setProperty("class", "primary")
-        self.apply_btn.clicked.connect(self.apply_requested.emit)
+        self.apply_btn.clicked.connect(self._on_save_clicked)
         layout.addWidget(self.apply_btn)
+    
+    def _on_save_clicked(self):
+        """Handle save button click with animation."""
+        self.apply_requested.emit()
+        
+        # Flash animation
+        self.apply_btn.setProperty("success", True)
+        self.style().polish(self.apply_btn)
+        self.apply_btn.setEnabled(False)
+        
+        # Reset after 200ms
+        QTimer.singleShot(200, self._reset_save_button)
+        
+    def _reset_save_button(self):
+        """Reset save button style."""
+        self.apply_btn.setProperty("success", False)
+        self.style().polish(self.apply_btn)
+        self.apply_btn.setEnabled(True)
     
     def _setup_animation(self):
         """Setup slide animation."""
@@ -155,6 +178,9 @@ class InspectorPane(QFrame):
         
         self._is_visible = True
         self.show()
+        
+        # Initial description update
+        self._update_mode_description()
         
         self._animation.stop()
         self._animation.setStartValue(0)
@@ -180,12 +206,18 @@ class InspectorPane(QFrame):
         self.hide()
         self.close_requested.emit()
     
+    @property
+    def current_path(self) -> Optional[str]:
+        """Get currently inspected image path."""
+        return self._current_path
+
     def set_image(
         self,
         path: str,
         preview: Optional[np.ndarray] = None,
         dimensions: Optional[tuple] = None,
-        face_count: int = 0
+        face_count: int = 0,
+        mode: Optional[str] = None
     ):
         """Set the image to inspect."""
         from pathlib import Path
@@ -202,6 +234,15 @@ class InspectorPane(QFrame):
         
         if preview is not None:
             self._set_preview_image(preview)
+            
+        # Update mode if provided
+        if mode:
+            index = self.mode_combo.findData(mode)
+            if index >= 0:
+                self.mode_combo.setCurrentIndex(index)
+            
+        # Update description in case language changed or first load
+        self._update_mode_description()
     
     def _set_preview_image(self, image: np.ndarray):
         """Set preview image from numpy array."""
@@ -237,6 +278,16 @@ class InspectorPane(QFrame):
         """Handle mode selection change."""
         mode = self.mode_combo.currentData()
         self.mode_changed.emit(mode)
+        self._update_mode_description()
+
+    def _update_mode_description(self):
+        """Update the description label based on selected mode."""
+        mode = self.mode_combo.currentData()
+        if not mode:
+            return
+            
+        desc_key = f"mode_desc.{mode}"
+        self.mode_desc_label.setText(tr(desc_key))
     
     @property
     def current_mode(self) -> str:
@@ -246,7 +297,7 @@ class InspectorPane(QFrame):
     def update_translations(self):
         """Update UI text after language change."""
         self.title_label.setText(tr("inspector.title"))
-        self.apply_btn.setText(tr("dialog.confirm"))
+        self.apply_btn.setText(tr("inspector.save"))
         
         # Update mode combo items
         current_mode = self.mode_combo.currentData()
@@ -260,3 +311,5 @@ class InspectorPane(QFrame):
         index = self.mode_combo.findData(current_mode)
         if index >= 0:
             self.mode_combo.setCurrentIndex(index)
+            
+        self._update_mode_description()
