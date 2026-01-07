@@ -8,7 +8,7 @@ from typing import List, Optional, Callable
 from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QScrollArea, QGridLayout, QFrame, QLabel,
-    QVBoxLayout, QSizePolicy
+    QVBoxLayout, QSizePolicy, QCheckBox
 )
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QPixmap, QImage
@@ -28,6 +28,7 @@ class ThumbnailItem(QFrame):
     
     clicked = Signal(str)       # Emits path on single click
     double_clicked = Signal(str)  # Emits path on double click
+    toggled = Signal(str, bool)   # Emits path and checked state
     
     def __init__(
         self,
@@ -41,7 +42,11 @@ class ThumbnailItem(QFrame):
         self.path = path
         self.has_manual_edit = has_manual_edit
         self._selected = False
+        self._checked = False
+        self._selected = False
+        self._checked = False
         self._faces = []
+        self._manual_regions = []
         self._original_size = (0, 0)
         
         self._setup_ui()
@@ -73,17 +78,52 @@ class ThumbnailItem(QFrame):
         self.marker_label.setVisible(self.has_manual_edit)
         
         # Position marker in top-right corner
+        # Helper for positioning
         self.marker_label.setParent(self)
         self.marker_label.move(THUMBNAIL_SIZE - 28, 4)
+
+        # Checkbox overlay
+        self.checkbox = QCheckBox(self)
+        self.checkbox.setStyleSheet(f"""
+            QCheckBox {{
+                spacing: 0px;
+            }}
+            QCheckBox::indicator {{
+                width: 18px;
+                height: 18px;
+                background-color: #2A2A2A;
+                border: 1px solid {COLOR_ACCENT};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {COLOR_ACCENT};
+                image: url(resources/icons/check.svg); /* Fallback if no icon */
+            }}
+        """)
+        self.checkbox.move(6, 6)
+        self.checkbox.toggled.connect(self._on_toggled)
+        
+    def _on_toggled(self, checked: bool):
+        """Handle internal toggle."""
+        self._checked = checked
+        self.toggled.emit(self.path, checked)
+        
+    def set_checked(self, checked: bool):
+        """Set checked state."""
+        self.checkbox.setChecked(checked)
+        
+    @property
+    def is_checked(self) -> bool:
+        return self._checked
     
     def set_thumbnail(self, thumbnail: np.ndarray):
         """Set the thumbnail image from numpy array."""
         self._thumbnail_data = thumbnail
         self._update_display()
 
-    def set_faces(self, faces: list, original_w: int, original_h: int):
-        """Set detected faces to display overlay."""
+    def set_overlays(self, faces: list, manual_regions: list, original_w: int, original_h: int):
+        """Set detected faces and manual regions to display overlay."""
         self._faces = faces
+        self._manual_regions = manual_regions
         self._original_size = (original_w, original_h)
         self._update_display()
         
@@ -108,8 +148,8 @@ class ThumbnailItem(QFrame):
         # Create mutable pixmap
         pixmap = QPixmap.fromImage(image)
         
-        # Draw faces if present
-        if self._faces and self._original_size[0] > 0:
+        # Draw overlays if present
+        if (self._faces or self._manual_regions) and self._original_size[0] > 0:
             from PySide6.QtGui import QPainter, QColor, QPen
             painter = QPainter(pixmap)
             painter.setRenderHint(QPainter.Antialiasing)
@@ -117,19 +157,39 @@ class ThumbnailItem(QFrame):
             # Scale factor
             scale_x = w / self._original_size[0]
             scale_y = h / self._original_size[1]
-            scale = min(scale_x, scale_y) # Should be uniform scaling usually
+            scale = min(scale_x, scale_y) # Uniform scaling
             
-            # Style
-            painter.setBrush(QColor(0, 120, 255, 60))  # Blue semi-transparent
-            painter.setPen(QPen(QColor(0, 120, 255, 180), 1))
-            
-            for face in self._faces:
-                fx = int(face.x * scale)
-                fy = int(face.y * scale)
-                fw = int(face.width * scale)
-                fh = int(face.height * scale)
-                painter.drawRect(fx, fy, fw, fh)
-                
+            # Draw Faces (Red)
+            if self._faces:
+                painter.setPen(QPen(QColor(255, 50, 50), 2))
+                painter.setBrush(Qt.NoBrush)
+                for face in self._faces:
+                    # Check if face is object or tuple/list
+                    if hasattr(face, 'x'):
+                        fx = int(face.x * scale)
+                        fy = int(face.y * scale)
+                        fw = int(face.width * scale)
+                        fh = int(face.height * scale)
+                    else:
+                        fx = int(face[0] * scale)
+                        fy = int(face[1] * scale)
+                        fw = int(face[2] * scale)
+                        fh = int(face[3] * scale)
+                    
+                    painter.drawRect(fx, fy, fw, fh)
+
+            # Draw Manual Regions (Blue)
+            if self._manual_regions:
+                painter.setPen(QPen(QColor(0, 200, 255), 2))
+                painter.setBrush(Qt.NoBrush)
+                for region in self._manual_regions:
+                    # region is ManualRegion object with x, y, width, height
+                    rx = int(region.x * scale)
+                    ry = int(region.y * scale)
+                    rw = int(region.width * scale)
+                    rh = int(region.height * scale)
+                    painter.drawRect(rx, ry, rw, rh)
+
             painter.end()
             
         self.image_label.setPixmap(pixmap)
@@ -174,13 +234,15 @@ class ThumbnailGrid(QScrollArea):
     
     item_clicked = Signal(str)
     item_double_clicked = Signal(str)
-    selection_changed = Signal(list)  # List of selected paths
+    selection_changed = Signal(list)  # Emits list of CHECKED paths (for batch ops)
+    active_changed = Signal(str)      # Emits ACTIVE path (for inspector)
     
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         
         self._items: dict[str, ThumbnailItem] = {}
-        self._selected_paths: List[str] = []
+        self._checked_paths: List[str] = []
+        self._active_path: Optional[str] = None
         self._columns = 4
         
         self._setup_ui()
@@ -219,6 +281,7 @@ class ThumbnailGrid(QScrollArea):
         item = ThumbnailItem(path, thumbnail, has_manual_edit)
         item.clicked.connect(self._on_item_clicked)
         item.double_clicked.connect(self._on_item_double_clicked)
+        item.toggled.connect(self._on_item_toggled)
         
         self._items[path] = item
         self._relayout()
@@ -231,10 +294,15 @@ class ThumbnailGrid(QScrollArea):
             item = self._items.pop(path)
             item.deleteLater()
             
-            # Remove from selection if present
-            if path in self._selected_paths:
-                self._selected_paths.remove(path)
-                self.selection_changed.emit(self._selected_paths)
+            # Remove from checked
+            if path in self._checked_paths:
+                self._checked_paths.remove(path)
+                self.selection_changed.emit(self._checked_paths)
+            
+            # Reset active if removed
+            if path == self._active_path:
+                self._active_path = None
+                self.active_changed.emit(None)
                 
             self._relayout()
     
@@ -243,8 +311,16 @@ class ThumbnailGrid(QScrollArea):
         for item in self._items.values():
             item.deleteLater()
         self._items.clear()
-        self._selected_paths.clear()
+        self._checked_paths.clear()
+        self._active_path = None
+        self.selection_changed.emit([])
+        self.active_changed.emit(None)
     
+    def set_overlays(self, path: str, faces: list, manual_regions: list, w: int, h: int):
+        """Update overlays for a specific thumbnail."""
+        if path in self._items:
+            self._items[path].set_overlays(faces, manual_regions, w, h)
+            
     def update_thumbnail(self, path: str, thumbnail: np.ndarray):
         """Update an existing thumbnail's image."""
         if path in self._items:
@@ -274,42 +350,50 @@ class ThumbnailGrid(QScrollArea):
     
     
     def select_all(self):
-        """Select all items."""
+        """Check all items."""
         for path, item in self._items.items():
-            if path not in self._selected_paths:
-                self._selected_paths.append(path)
-                item.set_selected(True)
-        self.selection_changed.emit(self._selected_paths)
+            if path not in self._checked_paths:
+                item.set_checked(True)
+                # _on_item_toggled will handle list update
         
     def deselect_all(self):
-        """Deselect all items."""
-        for path in self._selected_paths:
+        """Uncheck all items."""
+        for path in self._checked_paths[:]: # Copy list as it changes
             if path in self._items:
-                self._items[path].set_selected(False)
-        self._selected_paths.clear()
-        self.selection_changed.emit(self._selected_paths)
+                self._items[path].set_checked(False)
+        # _on_item_toggled will handle list update
         
     def toggle_select_all(self):
-        """Toggle select all / deselect all."""
-        if len(self._selected_paths) == len(self._items) and len(self._items) > 0:
+        """Toggle check all / uncheck all."""
+        if len(self._checked_paths) == len(self._items) and len(self._items) > 0:
             self.deselect_all()
         else:
             self.select_all()
             
     def _on_item_clicked(self, path: str):
-        """Handle thumbnail click."""
-        # Toggle selection for this item
-        if path in self._selected_paths:
-            self._selected_paths.remove(path)
-            if path in self._items:
-                self._items[path].set_selected(False)
-        else:
-            self._selected_paths.append(path)
-            if path in self._items:
-                self._items[path].set_selected(True)
+        """Handle thumbnail click (Active Selection)."""
+        # Set as single active item (Red Border)
+        if self._active_path and self._active_path != path:
+             if self._active_path in self._items:
+                 self._items[self._active_path].set_selected(False)
+        
+        self._active_path = path
+        if path in self._items:
+            self._items[path].set_selected(True)
         
         self.item_clicked.emit(path)
-        self.selection_changed.emit(self._selected_paths)
+        self.active_changed.emit(path)
+        
+    def _on_item_toggled(self, path: str, checked: bool):
+        """Handle thumbnail checkbox toggle."""
+        if checked:
+            if path not in self._checked_paths:
+                self._checked_paths.append(path)
+        else:
+            if path in self._checked_paths:
+                self._checked_paths.remove(path)
+        
+        self.selection_changed.emit(self._checked_paths)
     
     def _on_item_double_clicked(self, path: str):
         """Handle thumbnail double click."""
@@ -327,9 +411,20 @@ class ThumbnailGrid(QScrollArea):
             self._relayout()
     
     @property
+    def checked_paths(self) -> List[str]:
+        """Get list of checked thumbnail paths."""
+        return self._checked_paths.copy()
+        
+    @property
     def selected_paths(self) -> List[str]:
-        """Get list of selected thumbnail paths."""
-        return self._selected_paths.copy()
+        """DEPRECATED: Use checked_paths for batch, active_path for single."""
+        # Keeping this for compatibility temporarily, but modifying MainWindow next
+        return self._checked_paths.copy()
+        
+    @property
+    def active_path(self) -> Optional[str]:
+        """Get currently active (red border) path."""
+        return self._active_path
     
     @property
     def item_count(self) -> int:

@@ -94,7 +94,9 @@
         "yes": "Yes",
         "no": "No",
         "save_changes": "Save changes before closing?",
-        "unsaved_changes": "You have unsaved changes."
+        "unsaved_changes": "You have unsaved changes.",
+        "save_success": "Saved successfully.",
+        "confirm_remove": "Are you sure you want to remove {count} image(s)?"
     },
     "inspector": {
         "title": "Image Inspector",
@@ -103,7 +105,8 @@
         "faces": "Detected Faces",
         "manual_regions": "Manual Regions",
         "mode": "Mode",
-        "save": "Save"
+        "save": "Save",
+        "edit": "Edit"
     },
     "empty": {
         "title": "No Images Loaded",

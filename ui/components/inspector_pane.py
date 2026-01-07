@@ -34,12 +34,15 @@ class InspectorPane(QFrame):
     mode_changed = Signal(str)
     apply_requested = Signal()
     close_requested = Signal()
+    edit_requested = Signal()
     
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         
         self._current_path: Optional[str] = None
         self._is_visible = False
+        self._faces: list = [] # Initialize _faces
+        self._manual_regions: list = [] # Initialize _manual_regions
         
         self._setup_ui()
         self._setup_animation()
@@ -104,7 +107,8 @@ class InspectorPane(QFrame):
         
         # Detected faces
         faces_layout = QHBoxLayout()
-        faces_layout.addWidget(QLabel(tr("inspector.faces") + ":"))
+        self.faces_label_title = QLabel(tr("inspector.faces") + ":") # Added for translation update
+        faces_layout.addWidget(self.faces_label_title)
         self.faces_label = QLabel("0")
         self.faces_label.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
         faces_layout.addWidget(self.faces_label, 1)
@@ -138,14 +142,24 @@ class InspectorPane(QFrame):
         """)
         layout.addWidget(self.mode_desc_label)
         
-        # Spacer
-        layout.addStretch()
+        # Buttons layout
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
         
-        # Apply button
+        # Edit Button
+        self.edit_btn = QPushButton(tr("inspector.edit"))
+        self.edit_btn.setCursor(Qt.PointingHandCursor)
+        self.edit_btn.clicked.connect(self.edit_requested.emit)
+        button_layout.addWidget(self.edit_btn)
+        
+        # Save Button
         self.apply_btn = QPushButton(tr("inspector.save"))
-        self.apply_btn.setProperty("class", "primary")
+        self.apply_btn.setCursor(Qt.PointingHandCursor)
+        self.apply_btn.setProperty("accent", True)
         self.apply_btn.clicked.connect(self._on_save_clicked)
-        layout.addWidget(self.apply_btn)
+        button_layout.addWidget(self.apply_btn)
+
+        layout.addLayout(button_layout)
     
     def _on_save_clicked(self):
         """Handle save button click with animation."""
@@ -217,12 +231,16 @@ class InspectorPane(QFrame):
         preview: Optional[np.ndarray] = None,
         dimensions: Optional[tuple] = None,
         face_count: int = 0,
-        mode: Optional[str] = None
+        mode: Optional[str] = None,
+        faces: Optional[list] = None,
+        manual_regions: Optional[list] = None
     ):
         """Set the image to inspect."""
         from pathlib import Path
         
         self._current_path = path
+        self._faces = faces or []
+        self._manual_regions = manual_regions or []
         self.filename_label.setText(Path(path).name)
         
         if dimensions:
@@ -251,28 +269,50 @@ class InspectorPane(QFrame):
         
         h, w = image.shape[:2]
         
-        # Scale to fit preview area
-        preview_width = INSPECTOR_WIDTH - SPACING_MD * 4
-        scale = preview_width / w
-        new_w = int(w * scale)
-        new_h = int(h * scale)
-        
-        import cv2
-        resized = cv2.resize(image, (new_w, new_h))
-        
-        if len(resized.shape) == 3:
-            rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+        # Convert numpy array to QImage
+        if len(image.shape) == 3:
+            import cv2
+            rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             qimage = QImage(
-                rgb.data, new_w, new_h, new_w * 3,
+                rgb.data, w, h, w * 3,
                 QImage.Format_RGB888
             )
         else:
             qimage = QImage(
-                resized.data, new_w, new_h, new_w,
+                image.data, w, h, w,
                 QImage.Format_Grayscale8
             )
         
-        self.preview_label.setPixmap(QPixmap.fromImage(qimage))
+        pixmap = QPixmap.fromImage(qimage)
+        
+        # Draw Overlays using QPainter
+        if self._faces or self._manual_regions:
+            from PySide6.QtGui import QPainter, QColor, QPen
+            painter = QPainter(pixmap)
+            
+            # Draw Faces (Red)
+            pen_face = QPen(QColor(255, 50, 50), 2)
+            painter.setPen(pen_face)
+            for face in self._faces:
+                if hasattr(face, 'x'):
+                    x, y, fw, fh = face.x, face.y, face.width, face.height
+                else:
+                    x, y, fw, fh = face
+                painter.drawRect(x, y, fw, fh)
+                
+            # Draw Manual Regions (Blue/Cyan)
+            pen_manual = QPen(QColor(0, 200, 255), 2)
+            painter.setPen(pen_manual)
+            for region in self._manual_regions:
+                # region is ManualRegion object
+                x, y, w, h = int(region.x), int(region.y), int(region.width), int(region.height)
+                painter.drawRect(x, y, w, h)
+                
+            painter.end()
+
+        # Scale to fit width while maintaining aspect ratio
+        scaled = pixmap.scaledToWidth(INSPECTOR_WIDTH - SPACING_MD * 2, Qt.SmoothTransformation)
+        self.preview_label.setPixmap(scaled)
     
     def _on_mode_changed(self, index: int):
         """Handle mode selection change."""
@@ -297,7 +337,9 @@ class InspectorPane(QFrame):
     def update_translations(self):
         """Update UI text after language change."""
         self.title_label.setText(tr("inspector.title"))
+        self.faces_label_title.setText(tr("inspector.faces") + ":")
         self.apply_btn.setText(tr("inspector.save"))
+        self.edit_btn.setText(tr("inspector.edit"))
         
         # Update mode combo items
         current_mode = self.mode_combo.currentData()

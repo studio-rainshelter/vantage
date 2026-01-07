@@ -200,6 +200,7 @@ class MainWindow(QMainWindow):
         # Inspector
         self.inspector.close_requested.connect(self._close_inspector)
         self.inspector.apply_requested.connect(self._apply_from_inspector)
+        self.inspector.edit_requested.connect(self._on_inspector_edit_requested)
         self.inspector.mode_changed.connect(self._on_mode_changed)
         
         # Language (now from toolbar)
@@ -238,9 +239,22 @@ class MainWindow(QMainWindow):
 
     def _remove_selected_images(self):
         """Remove selected images from the list."""
-        selected_paths = self.thumbnail_grid.selected_paths
+        # Use checked paths for batch removal
+        selected_paths = self.thumbnail_grid.checked_paths
         
         if not selected_paths:
+            return
+
+        # Confirmation dialog
+        reply = QMessageBox.question(
+            self,
+            APP_NAME,
+            tr("msg.confirm_remove", count=len(selected_paths)),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply != QMessageBox.Yes:
             return
 
         for path in selected_paths:
@@ -314,13 +328,14 @@ class MainWindow(QMainWindow):
     
     def _run_face_detection(self):
         """Run face detection on selected images."""
-        selected_paths = self.thumbnail_grid.selected_paths
+        # Use checked paths for batch detection
+        selected_paths = self.thumbnail_grid.checked_paths
         
         if not selected_paths:
             QMessageBox.information(
                 self,
                 APP_NAME,
-                "No images selected. Please select thumbnails to detect faces."
+                "No images selected. Please check thumbnails to detect faces."
             )
             return
             
@@ -353,7 +368,11 @@ class MainWindow(QMainWindow):
             img_data.height = h
             
         # Update thumbnail overlay
-        self.thumbnail_grid.set_faces(path, faces, w, h)
+        self.thumbnail_grid.set_overlays(path, faces, [], w, h)
+        
+        # If this is the current inspector image, update inspector too
+        if self.inspector.current_path == path:
+            self._open_inspector(path)
     
     def _on_detection_progress(self, current: int, total: int):
         """Update detection progress."""
@@ -385,14 +404,14 @@ class MainWindow(QMainWindow):
     
     def _apply_effect(self, effect: EffectType):
         """Apply effect to selected images, or warn if none selected."""
-        # Get selected paths
-        selected_paths = self.thumbnail_grid.selected_paths
+        # Get selected paths (Checked)
+        selected_paths = self.thumbnail_grid.checked_paths
         
         if not selected_paths:
             QMessageBox.information(
                 self,
                 APP_NAME,
-                "No images selected. Please select thumbnails to process."
+                "No images selected. Please check thumbnails to process."
             )
             return
             
@@ -435,7 +454,8 @@ class MainWindow(QMainWindow):
 
     def _revert_mosaic(self):
         """Revert selected images to original."""
-        selected_paths = self.thumbnail_grid.selected_paths
+        # Use checked paths
+        selected_paths = self.thumbnail_grid.checked_paths
         
         # If no selection, ask to revert all
         if not selected_paths:
@@ -539,11 +559,11 @@ class MainWindow(QMainWindow):
     
     def _save_current(self):
         """Save currently selected processed image."""
-        selected = self.thumbnail_grid.selected_paths
-        if not selected:
+        # Use active path (Inspector target)
+        path = self.thumbnail_grid.active_path
+        if not path:
+            QMessageBox.information(self, APP_NAME, "No image selected.")
             return
-        
-        path = selected[0]
         
         if path not in self._processed_images:
             QMessageBox.information(
@@ -572,12 +592,27 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, APP_NAME, "Failed to save image.")
     
     def _save_all(self):
-        """Save all processed images."""
+        """Save processed images (Checked only, or all if none checked)."""
         if not self._processed_images:
             QMessageBox.information(
                 self, APP_NAME,
                 "No processed images. Apply mosaic/blur first."
             )
+            return
+        
+        # Determine targets: Checked paths that have been processed
+        checked_paths = self.thumbnail_grid.checked_paths
+        target_paths = []
+        
+        if checked_paths:
+            target_paths = [p for p in checked_paths if p in self._processed_images]
+        else:
+            # If nothing checked, save ALL processed
+            target_paths = list(self._processed_images.keys())
+            
+        if not target_paths:
+            msg = "No processed images selected." if checked_paths else "No processed images found."
+            QMessageBox.information(self, APP_NAME, msg)
             return
         
         # Get output directory
@@ -594,7 +629,8 @@ class MainWindow(QMainWindow):
         
         # Prepare export data
         export_data = []
-        for path, image in self._processed_images.items():
+        for path in target_paths:
+            image = self._processed_images[path]
             original_name = Path(path).stem
             ext = Path(path).suffix
             output_path = Path(output_dir) / f"{original_name}_processed{ext}"
@@ -672,9 +708,26 @@ class MainWindow(QMainWindow):
         img_data = self._data_manager.get(path)
         if img_data:
             img_data.manual_regions = regions
-            # Update thumbnail marker
+            # Update thumbnail marker AND overlay
             has_manual = len(regions) > 0
             self.thumbnail_grid.set_manual_edit(path, has_manual)
+            
+            # Fetch dimensions and faces to update overlay
+            image = self._image_processor.load_image(path)
+            if image is not None:
+                h, w = image.shape[:2]
+                detected_faces = img_data.faces if img_data else []
+                self.thumbnail_grid.set_overlays(path, detected_faces, regions, w, h)
+                
+            # If this is the current inspector image, update inspector too
+            if self.inspector.current_path == path:
+                self._open_inspector(path)
+                
+    def _on_inspector_edit_requested(self):
+        """Handle edit request from inspector."""
+        path = self.inspector.current_path
+        if path:
+            self._open_image_viewer(path)
     
     # =========================================================================
     # INSPECTOR
@@ -690,8 +743,10 @@ class MainWindow(QMainWindow):
         img_data = self._data_manager.get(path)
         face_count = img_data.face_count if img_data else 0
         mode = img_data.mode if img_data else None
+        faces = img_data.faces if img_data else []
+        manual_regions = img_data.manual_regions if img_data else []
         
-        self.inspector.set_image(path, image, (w, h), face_count, mode)
+        self.inspector.set_image(path, image, (w, h), face_count, mode, faces, manual_regions)
         self.inspector.show_panel()
         
     def _close_inspector(self):
