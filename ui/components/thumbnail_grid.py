@@ -290,6 +290,9 @@ class ThumbnailGrid(QScrollArea):
         
         # Enable drag and drop
         self.setAcceptDrops(True)
+        
+        # Apply initial style
+        self.update_style()
     
     def add_thumbnail(
         self,
@@ -455,6 +458,20 @@ class ThumbnailGrid(QScrollArea):
         return len(self._items)
 
     def update_style(self):
-        """Update style for all items."""
+        """Update style based on current theme."""
+        c = Styles.get_theme_colors()
+        
+        # Style the scroll area and container
+        self.setStyleSheet(f"""
+            QScrollArea {{
+                background-color: {c['COLOR_BASE']};
+                border: none;
+            }}
+            QWidget {{
+                background-color: {c['COLOR_BASE']};
+            }}
+        """)
+        
+        # Update styling for all items
         for item in self._items.values():
             item.update_style()
