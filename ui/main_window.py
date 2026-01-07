@@ -249,7 +249,7 @@ class MainWindow(QMainWindow):
         reply = QMessageBox.question(
             self,
             APP_NAME,
-            tr("msg.confirm_remove", count=len(selected_paths)),
+            tr("dialog.confirm_remove", count=len(selected_paths)),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
