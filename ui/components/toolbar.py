@@ -6,12 +6,13 @@ Top toolbar with primary action buttons and language switcher.
 
 from typing import Optional
 from PySide6.QtWidgets import (
-    QToolBar, QToolButton, QWidget, QLabel, QHBoxLayout, QSizePolicy
+    QToolBar, QToolButton, QWidget, QLabel, QHBoxLayout, QSizePolicy, QPushButton
 )
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QAction
 
-from config.constants import TOOLBAR_HEIGHT, COLOR_BORDER, COLOR_ACCENT
+from config.constants import TOOLBAR_HEIGHT
+from ui.styles import Styles
 from i18n import tr, Translator
 from .language_switcher import LanguageSwitcher
 
@@ -39,6 +40,7 @@ class MainToolbar(QToolBar):
     revert_mosaic = Signal()
     select_all = Signal()
     remove_selected = Signal()
+    theme_toggled = Signal()
     
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -54,18 +56,8 @@ class MainToolbar(QToolBar):
         self.setFloatable(False)
         self.setContextMenuPolicy(Qt.PreventContextMenu)
         self.setMinimumHeight(TOOLBAR_HEIGHT)
-        self.setStyleSheet(f"""
-            QToolBar {{
-                spacing: 4px;
-                padding: 8px;
-                border-bottom: 1px solid {COLOR_BORDER};
-            }}
-            QToolBar::separator {{
-                width: 1px;
-                background-color: {COLOR_BORDER};
-                margin: 4px 8px;
-            }}
-        """)
+        self.setMinimumHeight(TOOLBAR_HEIGHT)
+        self.update_style()
         
         # === File Operations ===
         
@@ -149,6 +141,35 @@ class MainToolbar(QToolBar):
         # === Language Switcher (Right side) ===
         self.lang_switcher = LanguageSwitcher()
         self.addWidget(self.lang_switcher)
+
+        # === Theme Toggle ===
+        self.theme_btn = QPushButton("Theme")
+        # Use same style as lang switcher for consistency
+        self.theme_btn.setStyleSheet(Styles.get_language_switcher_style())
+        self.theme_btn.setCursor(Qt.PointingHandCursor)
+        self.theme_btn.clicked.connect(self.theme_toggled.emit)
+        self.addWidget(self.theme_btn)
+    
+    def update_style(self):
+        """Update toolbar style based on current theme."""
+        c = Styles.get_theme_colors()
+        self.setStyleSheet(f"""
+            QToolBar {{
+                spacing: 4px;
+                padding: 8px;
+                border-bottom: 1px solid {c['COLOR_BORDER']};
+                background_color: {c['COLOR_BASE']}; 
+            }}
+            QToolBar::separator {{
+                width: 1px;
+                background-color: {c['COLOR_BORDER']};
+                margin: 4px 8px;
+            }}
+        """)
+        
+        # Update theme button style
+        if hasattr(self, 'theme_btn'):
+            self.theme_btn.setStyleSheet(Styles.get_language_switcher_style())
     
     def _update_translations(self, lang: str = None):
         """Update action text after language change."""

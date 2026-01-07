@@ -14,6 +14,7 @@ import numpy as np
 import cv2
 
 from config.constants import COLOR_ACCENT, COLOR_BORDER
+from ui.styles import Styles
 from core.mosaic_engine import ManualRegion, EffectType, RegionShape
 
 
@@ -61,9 +62,15 @@ class ROICanvas(QLabel):
         self._current_shape: Optional[RegionShape] = RegionShape.RECTANGLE  # None = Selection Mode
         
         # Style
-        self._region_color = QColor(COLOR_ACCENT)
+        self._update_colors()
+        
+    def _update_colors(self):
+        """Update drawing colors from theme."""
+        c = Styles.get_theme_colors()
+        self._region_color = QColor(c['COLOR_ACCENT'])
         self._region_color.setAlpha(128)
-        self._border_color = QColor(COLOR_ACCENT)
+        self._border_color = QColor(c['COLOR_ACCENT'])
+        self._ruler_color = QColor(c['COLOR_BORDER'])
         
         # Face Overlay Style (Blue)
         self._face_color = QColor(0, 120, 255, 60)  # Semi-transparent blue
@@ -470,7 +477,7 @@ class ROICanvas(QLabel):
         if self._pixmap is None:
             return
         
-        painter.setPen(QPen(QColor(COLOR_BORDER), 1))
+        painter.setPen(QPen(self._ruler_color, 1))
         
         # Draw tick marks at 100px intervals
         step = 100

@@ -14,9 +14,9 @@ from PySide6.QtGui import QPixmap, QImage
 import numpy as np
 
 from config.constants import (
-    INSPECTOR_WIDTH, COLOR_BORDER, COLOR_TEXT, COLOR_TEXT_DIM,
-    FONT_SIZE_SM, SPACING_MD, MosaicMode
+    INSPECTOR_WIDTH, FONT_SIZE_SM, SPACING_MD, MosaicMode
 )
+from ui.styles import Styles
 from i18n import tr
 
 
@@ -50,12 +50,6 @@ class InspectorPane(QFrame):
     def _setup_ui(self):
         """Initialize the inspector UI."""
         self.setFixedWidth(INSPECTOR_WIDTH)
-        self.setStyleSheet(f"""
-            QFrame {{
-                background-color: #1A1A1A;
-                border-left: 1px solid {COLOR_BORDER};
-            }}
-        """)
         
         # Main layout
         layout = QVBoxLayout(self)
@@ -66,11 +60,6 @@ class InspectorPane(QFrame):
         header = QHBoxLayout()
         
         self.title_label = QLabel(tr("inspector.title"))
-        self.title_label.setStyleSheet(f"""
-            font-size: 16px;
-            font-weight: bold;
-            color: {COLOR_TEXT};
-        """)
         header.addWidget(self.title_label)
         
         layout.addLayout(header)
@@ -79,10 +68,6 @@ class InspectorPane(QFrame):
         self.preview_label = QLabel()
         self.preview_label.setAlignment(Qt.AlignCenter)
         self.preview_label.setMinimumHeight(300)
-        self.preview_label.setStyleSheet(f"""
-            background-color: #0F0F0F;
-            border: 1px solid {COLOR_BORDER};
-        """)
         layout.addWidget(self.preview_label)
         
         # Info section
@@ -93,7 +78,6 @@ class InspectorPane(QFrame):
         filename_layout = QHBoxLayout()
         filename_layout.addWidget(QLabel(tr("inspector.filename") + ":"))
         self.filename_label = QLabel("—")
-        self.filename_label.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
         filename_layout.addWidget(self.filename_label, 1)
         info_layout.addLayout(filename_layout)
         
@@ -101,16 +85,14 @@ class InspectorPane(QFrame):
         dims_layout = QHBoxLayout()
         dims_layout.addWidget(QLabel(tr("inspector.dimensions") + ":"))
         self.dims_label = QLabel("—")
-        self.dims_label.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
         dims_layout.addWidget(self.dims_label, 1)
         info_layout.addLayout(dims_layout)
         
         # Detected faces
         faces_layout = QHBoxLayout()
-        self.faces_label_title = QLabel(tr("inspector.faces") + ":") # Added for translation update
+        self.faces_label_title = QLabel(tr("inspector.faces") + ":")
         faces_layout.addWidget(self.faces_label_title)
         self.faces_label = QLabel("0")
-        self.faces_label.setStyleSheet(f"color: {COLOR_TEXT_DIM};")
         faces_layout.addWidget(self.faces_label, 1)
         info_layout.addLayout(faces_layout)
         
@@ -133,13 +115,6 @@ class InspectorPane(QFrame):
         # Mode description
         self.mode_desc_label = QLabel()
         self.mode_desc_label.setWordWrap(True)
-        self.mode_desc_label.setStyleSheet(f"""
-            color: {COLOR_TEXT_DIM};
-            font-size: {FONT_SIZE_SM}px;
-            margin-top: 4px;
-            margin-bottom: 8px;
-            padding-bottom: 4px;
-        """)
         layout.addWidget(self.mode_desc_label)
         
         # Buttons layout
@@ -160,6 +135,43 @@ class InspectorPane(QFrame):
         button_layout.addWidget(self.apply_btn)
 
         layout.addLayout(button_layout)
+        
+        self.update_style()
+
+    def update_style(self):
+        """Update style for inspector components."""
+        c = Styles.get_theme_colors()
+        
+        self.setStyleSheet(f"""
+            QFrame {{
+                background-color: {c['COLOR_BASE_LIGHT']};
+                border-left: 1px solid {c['COLOR_BORDER']};
+            }}
+        """)
+        
+        self.title_label.setStyleSheet(f"""
+            font-size: 16px;
+            font-weight: bold;
+            color: {c['COLOR_TEXT']};
+        """)
+        
+        self.preview_label.setStyleSheet(f"""
+            background-color: {c['COLOR_BASE']};
+            border: 1px solid {c['COLOR_BORDER']};
+        """)
+        
+        dim_style = f"color: {c['COLOR_TEXT_DIM']};"
+        self.filename_label.setStyleSheet(dim_style)
+        self.dims_label.setStyleSheet(dim_style)
+        self.faces_label.setStyleSheet(dim_style)
+        
+        self.mode_desc_label.setStyleSheet(f"""
+            color: {c['COLOR_TEXT_DIM']};
+            font-size: {FONT_SIZE_SM}px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+        """)
     
     def _on_save_clicked(self):
         """Handle save button click with animation."""

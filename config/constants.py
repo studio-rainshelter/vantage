@@ -27,6 +27,42 @@ COLOR_SUCCESS = "#00C853"       # Success states
 COLOR_WARNING = "#FFB300"       # Warning states
 COLOR_ERROR = "#FF1744"         # Error states
 
+# Light Theme Palette
+LIGHT_THEME = {
+    "COLOR_BASE": "#F0F0F0",
+    "COLOR_BASE_LIGHT": "#FFFFFF",
+    "COLOR_ACCENT": "#FF3E00",
+    "COLOR_ACCENT_HOVER": "#FF5722",
+    "COLOR_BORDER": "#D0D0D0",
+    "COLOR_BORDER_FOCUS": "#A0A0A0",
+    "COLOR_TEXT": "#202020",
+    "COLOR_TEXT_DIM": "#606060",
+    "COLOR_TEXT_ACCENT": "#000000",
+    "COLOR_SUCCESS": "#00C853",
+    "COLOR_WARNING": "#EDA200",
+    "COLOR_ERROR": "#D50000",
+}
+
+DARK_THEME = {
+    "COLOR_BASE": COLOR_BASE,
+    "COLOR_BASE_LIGHT": COLOR_BASE_LIGHT,
+    "COLOR_ACCENT": COLOR_ACCENT,
+    "COLOR_ACCENT_HOVER": COLOR_ACCENT_HOVER,
+    "COLOR_BORDER": COLOR_BORDER,
+    "COLOR_BORDER_FOCUS": COLOR_BORDER_FOCUS,
+    "COLOR_TEXT": COLOR_TEXT,
+    "COLOR_TEXT_DIM": COLOR_TEXT_DIM,
+    "COLOR_TEXT_ACCENT": COLOR_TEXT_ACCENT,
+    "COLOR_SUCCESS": COLOR_SUCCESS,
+    "COLOR_WARNING": COLOR_WARNING,
+    "COLOR_ERROR": COLOR_ERROR,
+}
+
+THEMES = {
+    "dark": DARK_THEME,
+    "light": LIGHT_THEME,
+}
+
 # =============================================================================
 # TYPOGRAPHY
 # =============================================================================

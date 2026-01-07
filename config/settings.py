@@ -33,6 +33,7 @@ class Settings:
         'window_geometry': None,
         'show_ruler': True,
         'auto_save_edits': False,
+        'theme': 'dark',
     }
     
     def __new__(cls) -> 'Settings':
@@ -110,3 +111,11 @@ class Settings:
     @mosaic_mode.setter
     def mosaic_mode(self, value: str) -> None:
         self.set('mosaic_mode', value)
+
+    @property
+    def theme(self) -> str:
+        return self.get('theme', 'dark')
+
+    @theme.setter
+    def theme(self, value: str) -> None:
+        self.set('theme', value)

@@ -101,6 +101,29 @@ class ThumbnailItem(QFrame):
         """)
         self.checkbox.move(6, 6)
         self.checkbox.toggled.connect(self._on_toggled)
+        self.update_style()
+        
+    def update_style(self):
+        """Update style based on current theme."""
+        c = Styles.get_theme_colors()
+        self.setStyleSheet(Styles.get_thumbnail_style(self._selected))
+        self.marker_label.setStyleSheet(Styles.get_manual_marker_style())
+        
+        self.checkbox.setStyleSheet(f"""
+            QCheckBox {{
+                spacing: 0px;
+            }}
+            QCheckBox::indicator {{
+                width: 18px;
+                height: 18px;
+                background-color: #2A2A2A;
+                border: 1px solid {c['COLOR_ACCENT']};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {c['COLOR_ACCENT']};
+                image: url(resources/icons/check.svg); /* Fallback if no icon */
+            }}
+        """)
         
     def _on_toggled(self, checked: bool):
         """Handle internal toggle."""
@@ -430,3 +453,8 @@ class ThumbnailGrid(QScrollArea):
     def item_count(self) -> int:
         """Get number of thumbnails."""
         return len(self._items)
+
+    def update_style(self):
+        """Update style for all items."""
+        for item in self._items.values():
+            item.update_style()

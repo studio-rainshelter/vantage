@@ -15,9 +15,8 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeyEvent, QKeySequence, QShortcut
 import numpy as np
 
-from config.constants import (
-    COLOR_BASE, COLOR_BASE_LIGHT, COLOR_BORDER, COLOR_ACCENT, APP_NAME
-)
+from config.constants import APP_NAME
+from ui.styles import Styles
 from core import RegionShape, ManualRegion
 from ui.components.roi_canvas import ROICanvas
 from i18n import tr
@@ -70,50 +69,51 @@ class ImageViewerDialog(QDialog):
         self.setModal(False)
         self.setAttribute(Qt.WA_DeleteOnClose)
         
+        c = Styles.get_theme_colors()
         self.setStyleSheet(f"""
             QDialog {{
-                background-color: {COLOR_BASE};
+                background-color: {c['COLOR_BASE']};
             }}
             QFrame#toolbar {{
-                background-color: {COLOR_BASE_LIGHT};
-                border-bottom: 1px solid {COLOR_BORDER};
+                background-color: {c['COLOR_BASE_LIGHT']};
+                border-bottom: 1px solid {c['COLOR_BORDER']};
                 padding: 4px;
             }}
             QToolButton {{
                 background-color: transparent;
-                border: 1px solid {COLOR_BORDER};
+                border: 1px solid {c['COLOR_BORDER']};
                 border-radius: 0px;
                 padding: 6px 12px;
-                color: #E0E0E0;
+                color: {c['COLOR_TEXT']};
                 font-size: 12px;
                 min-width: 60px;
             }}
             QToolButton:hover {{
-                background-color: #2A2A2A;
+                background-color: {c['COLOR_BORDER_FOCUS']};
             }}
             QToolButton:checked {{
-                background-color: {COLOR_ACCENT};
-                color: white;
-                border-color: {COLOR_ACCENT};
+                background-color: {c['COLOR_ACCENT']};
+                color: {c['COLOR_TEXT_ACCENT']};
+                border-color: {c['COLOR_ACCENT']};
             }}
             QPushButton {{
-                background-color: {COLOR_BASE_LIGHT};
-                border: 1px solid {COLOR_BORDER};
+                background-color: {c['COLOR_BASE_LIGHT']};
+                border: 1px solid {c['COLOR_BORDER']};
                 border-radius: 0px;
                 padding: 8px 16px;
-                color: #E0E0E0;
+                color: {c['COLOR_TEXT']};
                 font-size: 12px;
             }}
             QPushButton:hover {{
-                background-color: #2A2A2A;
+                background-color: {c['COLOR_BORDER_FOCUS']};
             }}
             QPushButton#confirmBtn {{
-                background-color: {COLOR_ACCENT};
-                border-color: {COLOR_ACCENT};
-                color: white;
+                background-color: {c['COLOR_ACCENT']};
+                border-color: {c['COLOR_ACCENT']};
+                color: {c['COLOR_TEXT_ACCENT']};
             }}
             QPushButton#confirmBtn:hover {{
-                background-color: #FF5722;
+                background-color: {c['COLOR_ACCENT_HOVER']};
             }}
         """)
     

@@ -205,6 +205,9 @@ class MainWindow(QMainWindow):
         
         # Language (now from toolbar)
         self.toolbar.lang_switcher.language_changed.connect(self._on_language_changed)
+        
+        # Theme
+        self.toolbar.theme_toggled.connect(self._toggle_theme)
     
     # =========================================================================
     # FILE OPERATIONS
@@ -798,11 +801,9 @@ class MainWindow(QMainWindow):
         """Update status bar."""
         count = self._data_manager.count
         if count > 0:
-            self.count_label.setText(
-                tr("status.images_loaded", count=count)
-            )
+            self.count_label.setText(tr("status.images_count", count=count))
         else:
-            self.count_label.setText("")
+            self.count_label.clear()
         
         # Update face count
         total_faces = self._data_manager.total_faces
@@ -812,6 +813,19 @@ class MainWindow(QMainWindow):
             )
         else:
             self.faces_label.setText("")
+
+    def _toggle_theme(self):
+        """Toggle between light and dark theme."""
+        current = self._settings.theme
+        new_theme = 'light' if current == 'dark' else 'dark'
+        self._settings.theme = new_theme
+        
+        # Apply styles
+        self.setStyleSheet(Styles.get_main_stylesheet())
+        self.toolbar.update_style()
+        self.thumbnail_grid.update_style()
+        self.inspector.update_style()
+        self.empty_state.setStyleSheet(Styles.get_empty_state_style())
     
     def _on_language_changed(self, lang: str = None):
         """Handle language change."""
