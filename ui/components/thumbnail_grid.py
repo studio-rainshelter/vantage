@@ -112,6 +112,7 @@ class ThumbnailItem(QFrame):
         self.checkbox.setStyleSheet(f"""
             QCheckBox {{
                 spacing: 0px;
+                background-color: transparent;
             }}
             QCheckBox::indicator {{
                 width: 18px;
@@ -278,6 +279,7 @@ class ThumbnailGrid(QScrollArea):
         
         # Container widget
         self.container = QWidget()
+        self.container.setObjectName("gridContainer")
         self.grid_layout = QGridLayout(self.container)
         self.grid_layout.setSpacing(THUMBNAIL_GAP)
         self.grid_layout.setContentsMargins(
@@ -462,12 +464,13 @@ class ThumbnailGrid(QScrollArea):
         c = Styles.get_theme_colors()
         
         # Style the scroll area and container
+        # Style the scroll area and container
         self.setStyleSheet(f"""
             QScrollArea {{
                 background-color: {c['COLOR_BASE']};
                 border: none;
             }}
-            QWidget {{
+            #gridContainer {{
                 background-color: {c['COLOR_BASE']};
             }}
         """)

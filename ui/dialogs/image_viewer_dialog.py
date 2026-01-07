@@ -194,7 +194,8 @@ class ImageViewerDialog(QDialog):
         
         # Bottom buttons
         button_bar = QFrame()
-        button_bar.setStyleSheet(f"background-color: {COLOR_BASE_LIGHT}; border-top: 1px solid {COLOR_BORDER};")
+        c = Styles.get_theme_colors()
+        button_bar.setStyleSheet(f"background-color: {c['COLOR_BASE_LIGHT']}; border-top: 1px solid {c['COLOR_BORDER']};")
         button_layout = QHBoxLayout(button_bar)
         button_layout.setContentsMargins(8, 8, 8, 8)
         button_layout.setSpacing(8)
