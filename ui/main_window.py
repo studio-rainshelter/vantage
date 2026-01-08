@@ -836,6 +836,9 @@ class MainWindow(QMainWindow):
     
     def _on_language_changed(self, lang: str = None):
         """Handle language change."""
+        if lang:
+            self._settings.language = lang
+            
         # Update status
         self.status_label.setText(tr("status.ready"))
         self._update_status()

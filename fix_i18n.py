@@ -1,4 +1,148 @@
-{
+import json
+import os
+
+# ENGLISH DATA
+en_data = {
+    "app": {
+        "name": "VANTAGE",
+        "title": "Visual Anonymization & Tactical Graphics Editor"
+    },
+    "menu": {
+        "file": {
+            "title": "File",
+            "open": "Open",
+            "open_folder": "Open Folder",
+            "save": "Save",
+            "save_as": "Save As",
+            "export": "Export",
+            "export_all": "Export All",
+            "exit": "Exit"
+        },
+        "edit": {
+            "title": "Edit",
+            "undo": "Undo",
+            "redo": "Redo",
+            "select_all": "Select All",
+            "deselect": "Deselect All"
+        },
+        "view": {
+            "title": "View",
+            "zoom_in": "Zoom In",
+            "zoom_out": "Zoom Out",
+            "fit_to_window": "Fit to Window",
+            "actual_size": "Actual Size",
+            "show_ruler": "Show Ruler"
+        },
+        "process": {
+            "title": "Process",
+            "auto_detect": "Auto Detect Faces",
+            "apply_mosaic": "Apply Mosaic",
+            "apply_blur": "Apply Blur",
+            "clear_regions": "Clear Regions"
+        },
+        "settings": {
+            "title": "Settings",
+            "preferences": "Preferences"
+        },
+        "help": {
+            "title": "Help",
+            "about": "About"
+        }
+    },
+    "settings": {
+        "face_detection": "Face Detection",
+        "mosaic_size": "Mosaic Block Size",
+        "blur_size": "Blur Kernel Size",
+        "min_neighbors": "Min Neighbors",
+        "scale_factor": "Scale Factor",
+        "iou_threshold": "NMS Threshold",
+        "hint_neighbors": "Higher = Fewer false positives, Lower = More detections",
+        "hint_scale": "Lower = slower/more thorough, Higher = faster",
+        "hint_iou": "Overlap threshold for merging boxes"
+    },
+    "toolbar": {
+        "open": "Open Files",
+        "save": "Save",
+        "save_all": "Save All",
+        "auto": "Auto Detect",
+        "manual": "Manual Mode",
+        "mosaic": "Mosaic",
+        "blur": "Blur",
+        "revert": "Revert",
+        "select_all": "Select All",
+        "remove": "Remove Selected",
+        "inspector": "Inspector"
+    },
+    "tooltip": {
+        "inspector": "Toggle Inspector Panel"
+    },
+    "panel": {
+        "images": "Images",
+        "inspector": "Inspector",
+        "properties": "Properties"
+    },
+    "mode": {
+        "auto": "Auto",
+        "manual": "Manual",
+        "override": "Override",
+        "append": "Append"
+    },
+    "mode_desc": {
+        "auto": "Apply effect only to automatically detected faces.",
+        "manual": "Apply effect only to user-defined manual regions.",
+        "override": "Manual regions take precedence. Auto-detection is used only if no manual regions exist.",
+        "append": "Apply effect to both automatically detected faces and manual regions."
+    },
+    "status": {
+        "ready": "Ready",
+        "loading": "Loading...",
+        "processing": "Processing...",
+        "complete": "Complete",
+        "error": "Error",
+        "images_loaded": "{count} images loaded",
+        "faces_detected": "{count} faces detected"
+    },
+    "dialog": {
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "ok": "OK",
+        "yes": "Yes",
+        "no": "No",
+        "save_changes": "Save changes before closing?",
+        "unsaved_changes": "You have unsaved changes.",
+        "save_success": "Saved successfully.",
+        "confirm_remove": "Are you sure you want to remove {count} image(s)?"
+    },
+    "inspector": {
+        "title": "Image Inspector",
+        "filename": "Filename",
+        "dimensions": "Dimensions",
+        "faces": "Detected Faces",
+        "manual_regions": "Manual Regions",
+        "mode": "Mode",
+        "save": "Save",
+        "edit": "Edit"
+    },
+    "empty": {
+        "title": "No Images Loaded",
+        "subtitle": "Drag and drop images or folders here",
+        "or": "or",
+        "browse": "Browse Files"
+    },
+    "viewer": {
+        "shape": "Tool",
+        "rectangle": "Rectangle",
+        "ellipse": "Ellipse",
+        "freehand": "Freehand",
+        "select": "Select",
+        "delete_selected": "Delete Selected",
+        "clear": "Clear All",
+        "regions": "regions"
+    }
+}
+
+# KOREAN DATA
+ko_data = {
     "app": {
         "name": "VANTAGE",
         "title": "이미지 익명화 및 전술 그래픽 편집기"
@@ -136,3 +280,12 @@
         "regions": "영역"
     }
 }
+
+# Write files
+with open('i18n/en.json', 'w', encoding='utf-8') as f:
+    json.dump(en_data, f, indent=4)
+    
+with open('i18n/ko.json', 'w', encoding='utf-8') as f:
+    json.dump(ko_data, f, indent=4, ensure_ascii=False)
+
+print("Translation files fixed successfully.")

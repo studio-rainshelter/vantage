@@ -38,21 +38,23 @@
         },
         "settings": {
             "title": "Settings",
-            "preferences": "Preferences",
-            "face_detection": "Face Detection",
-            "mosaic_size": "Mosaic Block Size",
-            "blur_size": "Blur Kernel Size",
-            "min_neighbors": "Min Neighbors",
-            "scale_factor": "Scale Factor",
-            "iou_threshold": "NMS Threshold",
-            "hint_neighbors": "Higher = Fewer false positives, Lower = More detections",
-            "hint_scale": "Lower = slower/more thorough, Higher = faster",
-            "hint_iou": "Overlap threshold for merging boxes"
+            "preferences": "Preferences"
         },
         "help": {
             "title": "Help",
             "about": "About"
         }
+    },
+    "settings": {
+        "face_detection": "Face Detection",
+        "mosaic_size": "Mosaic Block Size",
+        "blur_size": "Blur Kernel Size",
+        "min_neighbors": "Min Neighbors",
+        "scale_factor": "Scale Factor",
+        "iou_threshold": "NMS Threshold",
+        "hint_neighbors": "Higher = Fewer false positives, Lower = More detections",
+        "hint_scale": "Lower = slower/more thorough, Higher = faster",
+        "hint_iou": "Overlap threshold for merging boxes"
     },
     "toolbar": {
         "open": "Open Files",
