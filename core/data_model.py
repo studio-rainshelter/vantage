@@ -111,7 +111,16 @@ class ImageDataManager:
     def add(self, path: str, width: int = 0, height: int = 0) -> ImageData:
         """Add a new image to the collection."""
         if path not in self._images:
-            self._images[path] = ImageData(path=path, width=width, height=height)
+            from config import Settings
+            settings = Settings()
+            default_mode = settings.mosaic_mode
+            
+            self._images[path] = ImageData(
+                path=path, 
+                width=width, 
+                height=height,
+                mode=default_mode
+            )
         return self._images[path]
     
     def get(self, path: str) -> Optional[ImageData]:

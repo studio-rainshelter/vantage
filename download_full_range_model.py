@@ -1,12 +1,12 @@
-
 import os
 import urllib.request
 import sys
-
 CANDIDATE_URLS = [
-    # UNPKG (Reliable mirror)
-    "https://unpkg.com/@mediapipe/face_detection@0.4.1646425229/face_detection_full_range.tflite",
-    "https://storage.googleapis.com/mediapipe-models/face_detector/face_detection_full_range/float16/1/face_detection_full_range.tflite",
+    # Sparse Full Range (Might have correct metadata)
+    "https://storage.googleapis.com/mediapipe-models/face_detector/face_detection_full_range_sparse/float16/1/face_detection_full_range_sparse.tflite",
+    
+    # MediaPipe Tasks Test Data
+    "https://raw.githubusercontent.com/googlesamples/mediapipe/main/tasks/python/test_data/face_detector/face_detection_full_range.tflite",
 ]
 
 DEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
@@ -16,9 +16,13 @@ def download_model():
     if not os.path.exists(DEST_DIR):
         os.makedirs(DEST_DIR)
         
+    # FORCE REDOWNLOAD: Remove existing file to ensure we get the new version
     if os.path.exists(DEST_PATH):
-        print(f"Model already exists at: {DEST_PATH}")
-        return
+        try:
+            os.remove(DEST_PATH)
+            print(f"Removed existing model at {DEST_PATH}")
+        except OSError:
+            print("Could not remove existing model, trying to overwrite...")
 
     print("Attempting to download full range model...")
     

@@ -24,11 +24,11 @@ class Settings:
     # Default settings
     DEFAULTS = {
         'language': DEFAULT_LANGUAGE,
-        'mosaic_mode': MosaicMode.AUTO,
+        'mosaic_mode': MosaicMode.APPEND,
         'mosaic_block_size': 10,
         'blur_kernel_size': 51,
         'face_detection_confidence': 0.3, # MediaPipe Confidence
-        'face_detection_model_type': 'full', # 'short' or 'full'
+        'face_detection_model_type': 'short', # 'short' or 'full'
         'last_open_directory': '',
         'last_save_directory': '',
         'window_geometry': None,
@@ -54,12 +54,10 @@ class Settings:
         self._load()
     
     def _get_settings_path(self) -> Path:
-        """Get platform-appropriate settings file path."""
-        import os
-        app_data = Path(os.environ.get('APPDATA', Path.home()))
-        settings_dir = app_data / 'VANTAGE'
-        settings_dir.mkdir(parents=True, exist_ok=True)
-        return settings_dir / 'settings.json'
+        """Get settings file path (relative to application root)."""
+        # Save in the same directory as the project root (parent of config dir)
+        root_dir = Path(__file__).parent.parent
+        return root_dir / 'settings.json'
     
     def _load(self) -> None:
         """Load settings from disk."""
