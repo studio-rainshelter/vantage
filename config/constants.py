@@ -117,10 +117,9 @@ IMAGE_LOAD_BATCH = 50           # Images to load per batch
 # =============================================================================
 # PROCESSING SETTINGS
 # =============================================================================
+# PROCESSING SETTINGS
+# =============================================================================
 FACE_DETECTION_CONFIDENCE = 0.5
-FACE_MIN_NEIGHBORS = 8          # Higher = fewer false positives
-FACE_SCALE_FACTOR = 1.1         # Scale factor for multi-scale
-FACE_MIN_SIZE = 30              # Minimum face size in pixels
 MOSAIC_BLOCK_SIZE = 10          # Default mosaic pixel size
 BLUR_KERNEL_SIZE = 51           # Default blur kernel
 

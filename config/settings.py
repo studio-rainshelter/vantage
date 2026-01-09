@@ -27,10 +27,7 @@ class Settings:
         'mosaic_mode': MosaicMode.AUTO,
         'mosaic_block_size': 10,
         'blur_kernel_size': 51,
-        'face_detection_confidence': 0.5, # Legacy
-        'face_min_neighbors': 6,          # New: Sensitivity
-        'face_scale_factor': 1.1,         # New: Accuracy/Speed trade-off
-        'face_iou_threshold': 0.3,        # New: NMS Threshold
+        'face_detection_confidence': 0.5, # MediaPipe Confidence
         'last_open_directory': '',
         'last_save_directory': '',
         'window_geometry': None,

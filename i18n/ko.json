@@ -49,12 +49,8 @@
         "face_detection": "얼굴 감지",
         "mosaic_size": "모자이크 블록 크기",
         "blur_size": "블러 커널 크기",
-        "min_neighbors": "최소 이웃 (민감도)",
-        "scale_factor": "스케일 팩터 (정밀도)",
-        "iou_threshold": "NMS 임계값 (중복제거)",
-        "hint_neighbors": "높음 = 오탐지 감소, 낮음 = 검출량 증가",
-        "hint_scale": "낮음 = 정밀/느림, 높음 = 빠름",
-        "hint_iou": "중복 박스 병합 기준 (IOU)"
+        "confidence": "감지 신뢰도",
+        "hint_confidence": "높음 = 오탐지 감소, 낮음 = 검출량 증가"
     },
     "toolbar": {
         "open": "파일 열기",

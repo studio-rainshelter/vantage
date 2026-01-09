@@ -1,20 +1,19 @@
 """
 VANTAGE Face Detector
 
-Pure OpenCV-based face detection for automatic anonymization.
+MediaPipe-based face detection (Tasks API) for automatic anonymization.
 """
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from dataclasses import dataclass
 import numpy as np
 import cv2
 import os
+import mediapipe as mp
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
 
-from config.constants import (
-    FACE_DETECTION_CONFIDENCE,
-    FACE_MIN_NEIGHBORS,
-    FACE_SCALE_FACTOR
-)
+from config.constants import FACE_DETECTION_CONFIDENCE
 
 
 @dataclass
@@ -39,69 +38,52 @@ class FaceRegion:
 
 class FaceDetector:
     """
-    OpenCV-based face detection.
+    MediaPipe-based face detection using Tasks API.
     
-    Uses multiple Haar Cascades (Frontal + Profile) with NMS to
-    maximize detection rate while reducing false positives.
+    Uses BlazeFace (short range) model.
     """
     
-    def __init__(
-        self, 
-        min_confidence: float = FACE_DETECTION_CONFIDENCE,
-        min_neighbors: int = FACE_MIN_NEIGHBORS,
-        scale_factor: float = FACE_SCALE_FACTOR,
-        iou_threshold: float = 0.3
-    ):
+    def __init__(self, min_confidence: float = FACE_DETECTION_CONFIDENCE):
         """
         Initialize the face detector.
         
         Args:
-            min_confidence: Unused in Haar Cascade (kept for API compatibility)
-            min_neighbors: Higher value = fewer false positives, lower recall
-            scale_factor: Scale factor for multiscale detection
-            iou_threshold: Threshold for Non-Maximum Suppression
+            min_confidence: Minimum confidence threshold (0.0 - 1.0)
         """
-        self._min_neighbors = min_neighbors
-        self._scale_factor = scale_factor
-        self._iou_threshold = iou_threshold
+        self._min_confidence = min_confidence
+        self._detector = None
         
-        self._haar_cascades = []
-        self._initialized = False
+        # Model path - robust resolution
+        # Try relative to CWD first, then relative to this file
+        cwd_path = "resources/blaze_face_short_range.tflite"
+        if os.path.exists(cwd_path):
+            self._model_path = os.path.abspath(cwd_path)
+        else:
+            # Fallback for when running from elsewhere (e.g. tests in different dir)
+            # Assuming core/face_detector.py is 2 levels deep from root
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            root_dir = os.path.dirname(os.path.dirname(current_dir))
+            self._model_path = os.path.join(root_dir, "resources", "blaze_face_short_range.tflite")
     
     def _ensure_initialized(self) -> None:
-        """Lazy initialization of OpenCV Haar Cascades."""
-        if self._initialized:
+        """Lazy initialization of MediaPipe Detector."""
+        if getattr(self, '_detector', None) is not None:
             return
             
-        self._haar_cascades = []
-        
-        # Cascades to try (Order matters: most specific to most general)
-        # Removed 'haarcascade_frontalface_default.xml' as it produces too many false positives
-        cascade_names = [
-            'haarcascade_frontalface_alt2.xml',  # Often best performance
-            'haarcascade_frontalface_alt.xml',
-            'haarcascade_profileface.xml'
-        ]
-        
-        for name in cascade_names:
-            # Try system path first
-            path = os.path.join(cv2.data.haarcascades, name)
-            if not os.path.exists(path):
-                # Fallback to local
-                path = name
-            
-            try:
-                cascade = cv2.CascadeClassifier(path)
-                if not cascade.empty():
-                    self._haar_cascades.append(cascade)
-                    print(f"[FaceDetector] Loaded cascade: {name}")
-            except Exception as e:
-                print(f"[FaceDetector] Failed to load {name}: {e}")
-        
-        if not self._haar_cascades:
-            print("[FaceDetector] WARNING: No Haar Cascades loaded. Detection will fail.")
-            
-        self._initialized = True
+        try:
+            if not os.path.exists(self._model_path):
+                raise FileNotFoundError(f"Model not found at: {self._model_path}")
+
+            base_options = python.BaseOptions(model_asset_path=self._model_path)
+            options = vision.FaceDetectorOptions(
+                base_options=base_options,
+                min_detection_confidence=self._min_confidence
+            )
+            self._detector = vision.FaceDetector.create_from_options(options)
+            print("[FaceDetector] Initialized MediaPipe Tasks API successfully")
+        except Exception as e:
+            print(f"[FaceDetector] Init failed: {e}")
+            raise
     
     def detect(self, image: np.ndarray) -> List[FaceRegion]:
         """
@@ -120,10 +102,6 @@ class FaceDetector:
         
         # 1. Try original orientation
         faces = self._detect_single(image)
-        
-        # If faces found, we return them. 
-        # OPTIONAL: You could continue to search rotations even if faces are found
-        # to catch mixed-orientation faces, but usually not needed for normal photos.
         if faces:
             return faces
             
@@ -151,94 +129,51 @@ class FaceDetector:
         return []
 
     def _detect_single(self, image: np.ndarray) -> List[FaceRegion]:
-        """Run multi-cascade detection on a single image instance."""
-        if not self._haar_cascades:
-            return []
-            
-        # Convert to grayscale
+        """Run MediaPipe detection on a single image instance."""
+        # MediaPipe requires RGB
         if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         else:
-            gray = image
-        
-        # Enhance contrast (Critical for Haar accuracy)
-        gray = cv2.equalizeHist(gray)
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
             
-        all_rects = []
+        # Create MP Image
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image_rgb)
         
-        # Detect with all loaded cascades
-        for cascade in self._haar_cascades:
-            faces = cascade.detectMultiScale(
-                gray,
-                scaleFactor=self._scale_factor,
-                minNeighbors=self._min_neighbors,
-                minSize=(30, 30),
-                flags=cv2.CASCADE_SCALE_IMAGE
-            )
-            for (x, y, w, h) in faces:
-                all_rects.append((x, y, w, h, 1.0))
+        # Detect
+        detection_result = self._detector.detect(mp_image)
         
-        if not all_rects:
+        if not detection_result.detections:
             return []
-        
-        # Apply NMS
-        kept_rects = self._nms(all_rects, self._iou_threshold)
-        
+            
         regions: List[FaceRegion] = []
-        for (x, y, w, h, conf) in kept_rects:
+        
+        for detection in detection_result.detections:
+            bbox = detection.bounding_box
+            score = detection.categories[0].score if detection.categories else 0.0
+            
+            # Tasks API returns absolute coordinates
+            abs_x = bbox.origin_x
+            abs_y = bbox.origin_y
+            abs_w = bbox.width
+            abs_h = bbox.height
+            
             regions.append(FaceRegion(
-                x=int(x),
-                y=int(y),
-                width=int(w),
-                height=int(h),
-                confidence=conf
+                x=abs_x,
+                y=abs_y,
+                width=abs_w,
+                height=abs_h,
+                confidence=score
             ))
             
         return regions
-
-    def _nms(self, rects: List[Tuple[int, int, int, int, float]], iou_thresh: float) -> List[Tuple[int, int, int, int, float]]:
-        """
-        Apply non-maximum suppression to a list of bounding boxes.
-        """
-        if not rects:
-            return []
-
-        # Convert to (x1, y1, x2, y2)
-        boxes = np.array([[x, y, x + w, y + h] for x, y, w, h, _ in rects])
-        
-        x1 = boxes[:, 0]
-        y1 = boxes[:, 1]
-        x2 = boxes[:, 2]
-        y2 = boxes[:, 3]
-        
-        area = (x2 - x1 + 1) * (y2 - y1 + 1)
-        idxs = np.array(range(len(rects))) # Haar returns no scores, so just use order
-        
-        pick = []
-        
-        while len(idxs) > 0:
-            last = len(idxs) - 1
-            i = idxs[last]
-            pick.append(i)
-            
-            xx1 = np.maximum(x1[i], x1[idxs[:last]])
-            yy1 = np.maximum(y1[i], y1[idxs[:last]])
-            xx2 = np.minimum(x2[i], x2[idxs[:last]])
-            yy2 = np.minimum(y2[i], y2[idxs[:last]])
-            
-            w = np.maximum(0, xx2 - xx1 + 1)
-            h = np.maximum(0, yy2 - yy1 + 1)
-            
-            overlap = (w * h) / area[idxs[:last]]
-            
-            idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > iou_thresh)[0])))
-            
-        return [rects[i] for i in pick]
 
     def _map_from_90(self, face: FaceRegion, orig_h: int, orig_w: int) -> FaceRegion:
         """Map coordinates from 90 deg CW rotated image back to original."""
         x1, y1 = face.x, face.y
         x2, y2 = face.x + face.width, face.y + face.height
+        
+        # New coordinates in original space
+        # (x, y) in 90deg -> (y, h-1-x) in orig
         
         pts = [
             (y1, orig_h - 1 - x1),
@@ -265,6 +200,9 @@ class FaceDetector:
         x1, y1 = face.x, face.y
         x2, y2 = face.x + face.width, face.y + face.height
         
+        # New coordinates in original space
+        # (x, y) in 270deg -> (w-1-y, x) in orig
+        
         pts = [
             (orig_w - 1 - y1, x1),
             (orig_w - 1 - y1, x2),
@@ -289,6 +227,9 @@ class FaceDetector:
         """Map coordinates from 180 deg rotated image back to original."""
         x1, y1 = face.x, face.y
         x2, y2 = face.x + face.width, face.y + face.height
+        
+        # New coordinates in original space
+        # (x, y) in 180deg -> (w-1-x, h-1-y) in orig
         
         pts = [
             (orig_w - 1 - x1, orig_h - 1 - y1),
@@ -317,12 +258,20 @@ class FaceDetector:
         return [self.detect(img) for img in images]
     
     def set_confidence(self, confidence: float) -> None:
-        """Unused in Haar Cascade (kept for API compatibility)."""
-        pass
+        """Update detection confidence threshold."""
+        self._min_confidence = confidence
+        # Re-init detector with new confidence if needed
+        if self._detector:
+            self.release()
+            self._ensure_initialized()
     
     def release(self) -> None:
-        """No resources to release for Haar Cascade."""
-        pass
+        """Release MediaPipe resources."""
+        detector = getattr(self, '_detector', None)
+        if detector:
+            detector.close()
+            self._detector = None
     
     def __del__(self):
         self.release()
+

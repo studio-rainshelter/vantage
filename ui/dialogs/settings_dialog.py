@@ -16,7 +16,7 @@ from PySide6.QtGui import QFont, QCursor
 from config import Settings
 from config.constants import (
     MOSAIC_BLOCK_SIZE, BLUR_KERNEL_SIZE,
-    FACE_MIN_NEIGHBORS, FACE_SCALE_FACTOR, FACE_DETECTION_CONFIDENCE
+    FACE_DETECTION_CONFIDENCE
 )
 from ui.styles import Styles
 from i18n import tr
@@ -236,25 +236,12 @@ class SettingsDialog(QDialog):
             
             face_layout.addRow(label, container)
         
-        # Min Neighbors
-        self.min_neighbors_spin = ModernSpinBox(int)
-        self.min_neighbors_spin.setRange(1, 15)
-        self.min_neighbors_spin.setValue(FACE_MIN_NEIGHBORS)
-        add_setting("settings.min_neighbors", self.min_neighbors_spin, "settings.hint_neighbors")
-        
-        # Scale Factor
-        self.scale_factor_spin = ModernSpinBox(float)
-        self.scale_factor_spin.setRange(1.01, 1.5)
-        self.scale_factor_spin.setSingleStep(0.01)
-        self.scale_factor_spin.setValue(FACE_SCALE_FACTOR)
-        add_setting("settings.scale_factor", self.scale_factor_spin, "settings.hint_scale")
-        
-        # IOU Threshold
-        self.iou_spin = ModernSpinBox(float)
-        self.iou_spin.setRange(0.1, 1.0)
-        self.iou_spin.setSingleStep(0.1)
-        self.iou_spin.setValue(0.3)
-        add_setting("settings.iou_threshold", self.iou_spin, "settings.hint_iou")
+        # Face Detection Confidence
+        self.confidence_spin = ModernSpinBox(float)
+        self.confidence_spin.setRange(0.1, 0.99)
+        self.confidence_spin.setSingleStep(0.05)
+        self.confidence_spin.setValue(FACE_DETECTION_CONFIDENCE)
+        add_setting("settings.confidence", self.confidence_spin, "settings.hint_confidence")
         
         layout.addWidget(face_group)
         
@@ -284,14 +271,9 @@ class SettingsDialog(QDialog):
         )
         
         # Face Detection
-        self.min_neighbors_spin.setValue(
-            self._settings.get('face_min_neighbors', FACE_MIN_NEIGHBORS)
-        )
-        self.scale_factor_spin.setValue(
-            self._settings.get('face_scale_factor', FACE_SCALE_FACTOR)
-        )
-        self.iou_spin.setValue(
-            self._settings.get('face_iou_threshold', 0.3)
+        # Face Detection
+        self.confidence_spin.setValue(
+            self._settings.get('face_detection_confidence', FACE_DETECTION_CONFIDENCE)
         )
     
     def _save_and_close(self):
@@ -301,9 +283,8 @@ class SettingsDialog(QDialog):
         self._settings.set('blur_kernel_size', self.blur_spin.value())
         
         # Face Detection
-        self._settings.set('face_min_neighbors', self.min_neighbors_spin.value())
-        self._settings.set('face_scale_factor', self.scale_factor_spin.value())
-        self._settings.set('face_iou_threshold', self.iou_spin.value())
+        # Face Detection
+        self._settings.set('face_detection_confidence', self.confidence_spin.value())
         
         self._settings.save()
         self.accept()

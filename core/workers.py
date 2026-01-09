@@ -94,9 +94,7 @@ class FaceDetectionWorker(QThread):
         
         self._paths = image_paths
         self._detector = FaceDetector(
-            min_neighbors=settings.get('face_min_neighbors', 6),
-            scale_factor=settings.get('face_scale_factor', 1.1),
-            iou_threshold=settings.get('face_iou_threshold', 0.3)
+            min_confidence=settings.get('face_detection_confidence', 0.5)
         )
         self._processor = ImageProcessor()
         self._cancelled = False
