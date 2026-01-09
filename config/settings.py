@@ -27,7 +27,8 @@ class Settings:
         'mosaic_mode': MosaicMode.AUTO,
         'mosaic_block_size': 10,
         'blur_kernel_size': 51,
-        'face_detection_confidence': 0.5, # MediaPipe Confidence
+        'face_detection_confidence': 0.3, # MediaPipe Confidence
+        'face_detection_model_type': 'full', # 'short' or 'full'
         'last_open_directory': '',
         'last_save_directory': '',
         'window_geometry': None,

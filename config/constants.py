@@ -119,7 +119,7 @@ IMAGE_LOAD_BATCH = 50           # Images to load per batch
 # =============================================================================
 # PROCESSING SETTINGS
 # =============================================================================
-FACE_DETECTION_CONFIDENCE = 0.5
+FACE_DETECTION_CONFIDENCE = 0.3
 MOSAIC_BLOCK_SIZE = 10          # Default mosaic pixel size
 BLUR_KERNEL_SIZE = 51           # Default blur kernel
 
