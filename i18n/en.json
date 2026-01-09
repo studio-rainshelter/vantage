@@ -129,6 +129,7 @@
         "select": "Select",
         "delete_selected": "Delete Selected",
         "clear": "Clear All",
-        "regions": "regions"
+        "regions": "regions",
+        "effect": "Effect"
     }
 }

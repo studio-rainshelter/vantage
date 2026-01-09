@@ -183,7 +183,8 @@ class ProcessingWorker(QThread):
                         auto_regions=data.get('faces'),
                         manual_regions=data.get('manual_regions'),
                         mode=data.get('mode', MosaicMode.AUTO),
-                        effect=self._effect
+                        effect=self._effect,
+                        override_manual_effect=True
                     )
                     
                     self.image_processed.emit(path, processed)

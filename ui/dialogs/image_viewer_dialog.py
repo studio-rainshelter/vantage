@@ -17,7 +17,7 @@ import numpy as np
 
 from config.constants import APP_NAME
 from ui.styles import Styles
-from core import RegionShape, ManualRegion
+from core import RegionShape, ManualRegion, EffectType
 from ui.components.roi_canvas import ROICanvas
 from i18n import tr
 

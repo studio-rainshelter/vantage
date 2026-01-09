@@ -129,6 +129,7 @@
         "select": "선택",
         "delete_selected": "선택 삭제",
         "clear": "모두 지우기",
-        "regions": "영역"
+        "regions": "영역",
+        "effect": "효과"
     }
 }

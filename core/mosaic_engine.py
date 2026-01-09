@@ -191,7 +191,8 @@ class MosaicEngine:
         auto_regions: Optional[List[FaceRegion]] = None,
         manual_regions: Optional[List[ManualRegion]] = None,
         mode: str = MosaicMode.AUTO,
-        effect: EffectType = EffectType.MOSAIC
+        effect: EffectType = EffectType.MOSAIC,
+        override_manual_effect: bool = False
     ) -> np.ndarray:
         """
         Process image with anonymization based on mode.
@@ -202,6 +203,7 @@ class MosaicEngine:
             manual_regions: User-defined regions
             mode: Processing mode (AUTO, MANUAL, OVERRIDE, APPEND)
             effect: Default effect type for auto regions
+            override_manual_effect: If True, use 'effect' for manual regions too
             
         Returns:
             Processed image with anonymization applied
@@ -210,6 +212,10 @@ class MosaicEngine:
         result = image.copy()
         
         regions_to_process: List[Tuple[Union[ManualRegion, Tuple[int, int, int, int]], EffectType]] = []
+        
+        # Helper to determine effect for manual region
+        def get_manual_effect(region):
+            return effect if override_manual_effect else region.effect
         
         # Determine which regions to process based on mode
         if mode == MosaicMode.AUTO:
@@ -222,13 +228,13 @@ class MosaicEngine:
             # Only manual regions
             if manual_regions:
                 for region in manual_regions:
-                    regions_to_process.append((region, region.effect))
+                    regions_to_process.append((region, get_manual_effect(region)))
                     
         elif mode == MosaicMode.OVERRIDE:
             # Manual regions only (overrides auto)
             if manual_regions:
                 for region in manual_regions:
-                    regions_to_process.append((region, region.effect))
+                    regions_to_process.append((region, get_manual_effect(region)))
             elif auto_regions:
                 # Fall back to auto if no manual regions
                 for region in auto_regions:
@@ -241,7 +247,7 @@ class MosaicEngine:
                     regions_to_process.append((region.bbox, effect))
             if manual_regions:
                 for region in manual_regions:
-                    regions_to_process.append((region, region.effect))
+                    regions_to_process.append((region, get_manual_effect(region)))
         
         # Apply effects
         # Apply effects
