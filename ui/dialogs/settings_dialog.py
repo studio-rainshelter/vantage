@@ -7,16 +7,110 @@ Application preferences and configuration.
 from typing import Optional
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QSpinBox, QDoubleSpinBox, QGroupBox, QFormLayout, QWidget
+    QSpinBox, QDoubleSpinBox, QGroupBox, QFormLayout, QWidget,
+    QAbstractSpinBox, QSlider, QSizePolicy
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QEvent
+from PySide6.QtGui import QFont, QCursor
 
 from config import Settings
 from config.constants import (
-    MOSAIC_BLOCK_SIZE, BLUR_KERNEL_SIZE
+    MOSAIC_BLOCK_SIZE, BLUR_KERNEL_SIZE,
+    FACE_MIN_NEIGHBORS, FACE_SCALE_FACTOR, FACE_DETECTION_CONFIDENCE
 )
 from ui.styles import Styles
 from i18n import tr
+
+
+class ModernSpinBox(QWidget):
+    """
+    Custom SpinBox with slider control.
+    """
+    def __init__(self, value_type=int, parent=None):
+        super().__init__(parent)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
+        
+        self.value_type = value_type
+
+        # Slider (Left)
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setMinimumWidth(120)
+        self.slider.setCursor(Qt.PointingHandCursor)
+        self.slider.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        
+        # Spinbox (Right)
+        if value_type == float:
+            self.spin = QDoubleSpinBox()
+        else:
+            self.spin = QSpinBox()
+            
+        self.spin.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        self.spin.setAlignment(Qt.AlignCenter)
+        self.spin.setFixedWidth(70) # Fixed width for clean alignment
+        
+        layout.addWidget(self.slider)
+        layout.addWidget(self.spin)
+        
+        # Sync Slider <-> SpinBox
+        self.spin.valueChanged.connect(self._on_spin_changed)
+        self.slider.valueChanged.connect(self._on_slider_changed)
+        
+        # Internal state to prevent loop
+        self._updating = False
+
+    def _on_spin_changed(self, val):
+        if self._updating: return
+        self._updating = True
+        
+        if self.value_type == float:
+            min_val = self.spin.minimum()
+            max_val = self.spin.maximum()
+            
+            if max_val > min_val:
+                ratio = (val - min_val) / (max_val - min_val)
+                slider_val = int(ratio * 1000)
+                self.slider.setValue(slider_val)
+        else:
+            self.slider.setValue(val)
+            
+        self._updating = False
+
+    def _on_slider_changed(self, val):
+        if self._updating: return
+        self._updating = True
+        
+        if self.value_type == float:
+            min_val = self.spin.minimum()
+            max_val = self.spin.maximum()
+            
+            ratio = val / 1000.0
+            new_val = min_val + ratio * (max_val - min_val)
+            self.spin.setValue(new_val)
+        else:
+            self.spin.setValue(val)
+            
+        self._updating = False
+
+    def setRange(self, min_val, max_val):
+        self.spin.setRange(min_val, max_val)
+        if self.value_type == float:
+            self.slider.setRange(0, 1000)
+        else:
+            self.slider.setRange(min_val, max_val)
+        
+    def setValue(self, val):
+        self.spin.setValue(val)
+        
+    def value(self):
+        return self.spin.value()
+        
+    def setSingleStep(self, step):
+        self.spin.setSingleStep(step)
+        if self.value_type == int:
+            self.slider.setSingleStep(step)
+
 
 
 class SettingsDialog(QDialog):
@@ -104,11 +198,11 @@ class SettingsDialog(QDialog):
         proc_layout = QFormLayout(proc_group)
         proc_layout.setSpacing(12)
         
-        self.block_size_spin = QSpinBox()
+        self.block_size_spin = ModernSpinBox(int)
         self.block_size_spin.setRange(2, 50)
         self.block_size_spin.setValue(MOSAIC_BLOCK_SIZE)
         
-        self.blur_spin = QSpinBox()
+        self.blur_spin = ModernSpinBox(int)
         self.blur_spin.setRange(3, 101)
         self.blur_spin.setSingleStep(2)
         self.blur_spin.setValue(BLUR_KERNEL_SIZE)
@@ -143,20 +237,20 @@ class SettingsDialog(QDialog):
             face_layout.addRow(label, container)
         
         # Min Neighbors
-        self.min_neighbors_spin = QSpinBox()
+        self.min_neighbors_spin = ModernSpinBox(int)
         self.min_neighbors_spin.setRange(1, 15)
-        self.min_neighbors_spin.setValue(6)
+        self.min_neighbors_spin.setValue(FACE_MIN_NEIGHBORS)
         add_setting("settings.min_neighbors", self.min_neighbors_spin, "settings.hint_neighbors")
         
         # Scale Factor
-        self.scale_factor_spin = QDoubleSpinBox()
+        self.scale_factor_spin = ModernSpinBox(float)
         self.scale_factor_spin.setRange(1.01, 1.5)
         self.scale_factor_spin.setSingleStep(0.01)
-        self.scale_factor_spin.setValue(1.1)
+        self.scale_factor_spin.setValue(FACE_SCALE_FACTOR)
         add_setting("settings.scale_factor", self.scale_factor_spin, "settings.hint_scale")
         
         # IOU Threshold
-        self.iou_spin = QDoubleSpinBox()
+        self.iou_spin = ModernSpinBox(float)
         self.iou_spin.setRange(0.1, 1.0)
         self.iou_spin.setSingleStep(0.1)
         self.iou_spin.setValue(0.3)
@@ -191,10 +285,10 @@ class SettingsDialog(QDialog):
         
         # Face Detection
         self.min_neighbors_spin.setValue(
-            self._settings.get('face_min_neighbors', 6)
+            self._settings.get('face_min_neighbors', FACE_MIN_NEIGHBORS)
         )
         self.scale_factor_spin.setValue(
-            self._settings.get('face_scale_factor', 1.1)
+            self._settings.get('face_scale_factor', FACE_SCALE_FACTOR)
         )
         self.iou_spin.setValue(
             self._settings.get('face_iou_threshold', 0.3)

@@ -10,7 +10,11 @@ import numpy as np
 import cv2
 import os
 
-from config.constants import FACE_DETECTION_CONFIDENCE
+from config.constants import (
+    FACE_DETECTION_CONFIDENCE,
+    FACE_MIN_NEIGHBORS,
+    FACE_SCALE_FACTOR
+)
 
 
 @dataclass
@@ -44,8 +48,8 @@ class FaceDetector:
     def __init__(
         self, 
         min_confidence: float = FACE_DETECTION_CONFIDENCE,
-        min_neighbors: int = 6,
-        scale_factor: float = 1.1,
+        min_neighbors: int = FACE_MIN_NEIGHBORS,
+        scale_factor: float = FACE_SCALE_FACTOR,
         iou_threshold: float = 0.3
     ):
         """

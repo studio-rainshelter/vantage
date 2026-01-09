@@ -411,8 +411,8 @@ class Styles:
         c = Styles.get_theme_colors()
         return f"""
         QPushButton {{
-            background-color: transparent;
-            border: {BORDER_WIDTH}px solid {c['COLOR_BORDER']};
+            background-color: {c['COLOR_BASE_LIGHT']};
+            border: {BORDER_WIDTH}px solid {c['COLOR_TEXT_DIM']};
             color: {c['COLOR_TEXT']};
             font-family: "{FONT_MONO}", monospace;
             font-size: {FONT_SIZE_MD}px;
@@ -424,6 +424,7 @@ class Styles:
         
         QPushButton:hover {{
             background-color: {c['COLOR_BORDER']};
+            border-color: {c['COLOR_TEXT']};
             color: {c['COLOR_TEXT_ACCENT']};
         }}
         
