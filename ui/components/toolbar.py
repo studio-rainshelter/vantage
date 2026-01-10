@@ -176,18 +176,20 @@ class MainToolbar(QToolBar):
             }}
         """)
         
+        # Update all button styles to match new theme
+        btn_style = Styles.get_language_switcher_style()
+        
+        if hasattr(self, 'settings_btn'):
+            self.settings_btn.setStyleSheet(btn_style)
+            
+        if hasattr(self, 'lang_switcher'):
+            self.lang_switcher.setStyleSheet(btn_style)
+        
         # Update theme button style and icon
         if hasattr(self, 'theme_btn'):
-            self.theme_btn.setStyleSheet(Styles.get_language_switcher_style())
+            self.theme_btn.setStyleSheet(btn_style)
             
-            # Set icon based on CURRENT theme to indicate "Switch to X" or "Current is X"
-            # Usually toggle shows current state.
-            # If Dark Mode -> Show Moon (Current) or Sun (Switch to)?
-            # Let's show the ICON of the mode we are IN. 
-            # Dark Mode = Moon, Light Mode = Sun. 
-            # Or usually it shows what you will switch TO.
-            # Let's go with: Dark Mode -> Show Sun (Light). Light Mode -> Show Moon (Dark).
-            
+            # Set icon based on CURRENT theme
             from config.settings import Settings
             current_theme = Settings().theme
             if current_theme == 'dark':
