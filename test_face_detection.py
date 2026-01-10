@@ -46,6 +46,31 @@ def test_detection_dummy_image():
         return False
     return True
 
+def test_full_range_model():
+    print("Testing FaceDetector with Full Range model...")
+    try:
+        # Initialize with model_type='full'
+        detector = FaceDetector(model_type='full')
+        detector._ensure_initialized()
+        print("Running Full Range tests...")
+    # This should now succeed with YuNet, without fallback warning
+    except Exception as e:
+        print(f"FAIL: Full Range model initialization failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+    try:
+        detector_full = FaceDetector(model_type='full')
+        img = 255 * np.ones((100, 100, 3), dtype=np.uint8)
+        faces = detector_full.detect(img)
+        print(f"PASS: Full Range detection ran successfully (Faces found: {len(faces)}).")
+    except Exception as e:
+        print(f"FAIL: Full Range detection failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+    return True
+
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
     sys.path.append(current_dir)
@@ -53,7 +78,8 @@ if __name__ == "__main__":
     steps = [
         test_initialization,
         test_detection_empty_image,
-        test_detection_dummy_image
+        test_detection_dummy_image,
+        test_full_range_model
     ]
     
     failed = False

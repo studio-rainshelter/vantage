@@ -8,7 +8,7 @@ from typing import Optional
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QSpinBox, QDoubleSpinBox, QGroupBox, QFormLayout, QWidget,
-    QAbstractSpinBox, QSlider, QSizePolicy
+    QAbstractSpinBox, QSlider, QSizePolicy, QComboBox
 )
 from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QFont, QCursor
@@ -236,6 +236,12 @@ class SettingsDialog(QDialog):
             
             face_layout.addRow(label, container)
         
+        # Face Detection Model
+        self.model_combo = QComboBox()
+        self.model_combo.addItem(tr("settings.model_short"), "short")
+        self.model_combo.addItem(tr("settings.model_full"), "full")
+        add_setting("settings.detection_model", self.model_combo)
+
         # Face Detection Confidence
         self.confidence_spin = ModernSpinBox(float)
         self.confidence_spin.setRange(0.1, 0.99)
@@ -275,6 +281,10 @@ class SettingsDialog(QDialog):
         self.confidence_spin.setValue(
             self._settings.get('face_detection_confidence', FACE_DETECTION_CONFIDENCE)
         )
+        current_model = self._settings.get('face_detection_model_type', 'short')
+        index = self.model_combo.findData(current_model)
+        if index >= 0:
+            self.model_combo.setCurrentIndex(index)
     
     def _save_and_close(self):
         """Save settings and close dialog."""
@@ -283,8 +293,8 @@ class SettingsDialog(QDialog):
         self._settings.set('blur_kernel_size', self.blur_spin.value())
         
         # Face Detection
-        # Face Detection
         self._settings.set('face_detection_confidence', self.confidence_spin.value())
+        self._settings.set('face_detection_model_type', self.model_combo.currentData())
         
         self._settings.save()
         self.accept()

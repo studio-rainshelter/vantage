@@ -114,7 +114,7 @@ class FaceDetectionWorker(QThread):
                 
                 if image is not None:
                     # Detect faces
-                    faces = self._detector.detect(image)
+                    faces = self._detector.detect(image, tile=False)
                     h, w = image.shape[:2]
                     self.detection_complete.emit(path, faces, (w, h))
                 else:
