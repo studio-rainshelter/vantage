@@ -321,8 +321,10 @@ class Styles:
         
         QComboBox QAbstractItemView {{
             background-color: {c['COLOR_BASE_LIGHT']};
+            color: {c['COLOR_TEXT']};
             border: {BORDER_WIDTH}px solid {c['COLOR_BORDER']};
             selection-background-color: {c['COLOR_ACCENT']};
+            selection-color: {c['COLOR_TEXT_ACCENT']};
         }}
         
         /* ========================================
