@@ -43,8 +43,6 @@ class ThumbnailItem(QFrame):
         self.has_manual_edit = has_manual_edit
         self._selected = False
         self._checked = False
-        self._selected = False
-        self._checked = False
         self._faces = []
         self._manual_regions = []
         self._original_size = (0, 0)
@@ -96,7 +94,6 @@ class ThumbnailItem(QFrame):
             }}
             QCheckBox::indicator:checked {{
                 background-color: {COLOR_ACCENT};
-                image: url(resources/icons/check.svg); /* Fallback if no icon */
             }}
         """)
         self.checkbox.move(6, 6)
@@ -122,7 +119,6 @@ class ThumbnailItem(QFrame):
             }}
             QCheckBox::indicator:checked {{
                 background-color: {c['COLOR_ACCENT']};
-                image: url(resources/icons/check.svg); /* Fallback if no icon */
             }}
         """)
         
@@ -358,11 +354,6 @@ class ThumbnailGrid(QScrollArea):
         """Update manual edit marker for a thumbnail."""
         if path in self._items:
             self._items[path].set_manual_edit(has_edit)
-
-    def set_faces(self, path: str, faces: list, original_w: int, original_h: int):
-        """Update face overlay for a thumbnail."""
-        if path in self._items:
-            self._items[path].set_faces(faces, original_w, original_h)
     
     def _relayout(self):
         """Reorganize grid layout."""
