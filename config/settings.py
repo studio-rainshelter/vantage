@@ -5,6 +5,8 @@ Handles application settings persistence and runtime configuration.
 """
 
 import json
+import sys
+import os
 from pathlib import Path
 from typing import Any, Optional
 
@@ -15,8 +17,8 @@ class Settings:
     """
     Application settings manager with JSON persistence.
     
-    Settings are stored in user's app data directory and persist
-    across application restarts.
+    Settings are stored next to the executable (or project root in dev mode)
+    and persist across application restarts.
     """
     
     _instance: Optional['Settings'] = None
@@ -54,10 +56,14 @@ class Settings:
         self._load()
     
     def _get_settings_path(self) -> Path:
-        """Get settings file path (relative to application root)."""
-        # Save in the same directory as the project root (parent of config dir)
-        root_dir = Path(__file__).parent.parent
-        return root_dir / 'settings.json'
+        """Get settings file path (next to executable or project root)."""
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle - save next to the .exe
+            app_dir = Path(sys.executable).parent
+        else:
+            # Running in normal Python - save in project root
+            app_dir = Path(__file__).parent.parent
+        return app_dir / 'vantage.json'
     
     def _load(self) -> None:
         """Load settings from disk."""

@@ -9,11 +9,24 @@ from dataclasses import dataclass
 import numpy as np
 import cv2
 import os
+import sys
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 from config.constants import FACE_DETECTION_CONFIDENCE
+
+
+def get_resource_path(relative_path: str) -> str:
+    """Get absolute path to resource, works for dev and for PyInstaller."""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # Running in normal Python environment
+        base_path = os.path.abspath(".")
+    
+    return os.path.join(base_path, relative_path)
 
 
 @dataclass
@@ -66,15 +79,8 @@ class FaceDetector:
         else:
             model_filename = "blaze_face_short_range.tflite"
             
-        # Model path resolution
-        cwd_path = os.path.join("resources", model_filename)
-        if os.path.exists(cwd_path):
-            self._model_path = os.path.abspath(cwd_path)
-        else:
-            # Fallback for when running from elsewhere
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            root_dir = os.path.dirname(os.path.dirname(current_dir))
-            self._model_path = os.path.join(root_dir, "resources", model_filename)
+        # Model path resolution - supports PyInstaller bundled resources
+        self._model_path = get_resource_path(os.path.join("resources", model_filename))
     
     def _ensure_initialized(self) -> None:
         """Lazy initialization of Detector."""
