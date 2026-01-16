@@ -69,6 +69,18 @@ AI가 놓친 영역이나 얼굴 외 민감 정보(번호판, 문서 등)를 직
 
 ## 설치 방법
 
+### 실행 파일 다운로드 (권장)
+[GitHub Releases](https://github.com/studio-rainshelter/vantage/releases)에서 최신 버전의 `VANTAGE.exe`를 다운로드하여 바로 실행할 수 있습니다.
+
+### 직접 빌드
+저장소를 클론한 후 `build.bat`을 실행하면 실행 파일을 직접 생성할 수 있습니다.
+```bash
+git clone https://github.com/studio-rainshelter/vantage.git
+cd vantage
+build.bat
+# 빌드 완료 후 dist/VANTAGE.exe 생성
+```
+
 ### 개발 버전 실행
 ```bash
 git clone https://github.com/studio-rainshelter/vantage.git
