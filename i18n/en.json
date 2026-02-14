@@ -47,8 +47,8 @@
     },
     "settings": {
         "face_detection": "Face Detection",
-        "mosaic_size": "Mosaic Block Size",
-        "blur_size": "Blur Kernel Size",
+        "mosaic_size": "Mosaic Intensity (Block Size)",
+        "blur_size": "Blur Intensity (Kernel Size)",
         "confidence": "Detection Confidence",
         "hint_confidence": "Higher = Fewer false positives, Lower = More detections",
         "detection_model": "Detection Model",

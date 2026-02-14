@@ -47,8 +47,8 @@
     },
     "settings": {
         "face_detection": "얼굴 감지",
-        "mosaic_size": "모자이크 블록 크기",
-        "blur_size": "블러 커널 크기",
+        "mosaic_size": "모자이크 강도 (블록 크기)",
+        "blur_size": "블러 강도 (커널 크기)",
         "confidence": "감지 신뢰도",
         "hint_confidence": "높음 = 오탐지 감소, 낮음 = 검출량 증가",
         "detection_model": "검출 모델",

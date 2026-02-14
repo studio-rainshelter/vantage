@@ -160,7 +160,18 @@ class ProcessingWorker(QThread):
         self._image_data = image_data
         self._effect = effect
         self._processor = ImageProcessor()
-        self._engine = MosaicEngine()
+        
+        # Load settings for engine
+        from config import Settings
+        settings = Settings()
+        block_size = settings.get('mosaic_block_size')
+        blur_kernel = settings.get('blur_kernel_size')
+        
+        # Initialize engine with settings (if None, it uses defaults)
+        self._engine = MosaicEngine(
+            block_size=block_size if block_size else 10,
+            blur_kernel=blur_kernel if blur_kernel else 51
+        )
         self._cancelled = False
     
     def run(self):

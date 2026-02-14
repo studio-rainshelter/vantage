@@ -199,11 +199,11 @@ class SettingsDialog(QDialog):
         proc_layout.setSpacing(12)
         
         self.block_size_spin = ModernSpinBox(int)
-        self.block_size_spin.setRange(2, 50)
+        self.block_size_spin.setRange(2, 200)
         self.block_size_spin.setValue(MOSAIC_BLOCK_SIZE)
         
         self.blur_spin = ModernSpinBox(int)
-        self.blur_spin.setRange(3, 101)
+        self.blur_spin.setRange(3, 301)
         self.blur_spin.setSingleStep(2)
         self.blur_spin.setValue(BLUR_KERNEL_SIZE)
         
